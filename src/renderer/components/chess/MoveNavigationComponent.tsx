@@ -1,15 +1,15 @@
 /**
- * @fileoverview Move Navigation Component with quality indicators
+ * @fileoverview Move Navigation Component
  * @module renderer/components/chess/MoveNavigationComponent
  * 
- * Displays chess moves with quality indicators, navigation controls,
- * and game statistics as described in the user flow.
+ * Provides move list display and navigation controls for chess games.
+ * Includes move quality indicators and keyboard navigation support.
  * 
  * @requires react
- * @requires chess
+ * @requires chess.js
  */
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useChessStore } from '../../stores/useChessStore';
 import { MoveQuality } from '../../../shared/types/chess';
 

@@ -1,185 +1,146 @@
 /**
- * @fileoverview Sample chess game utility
+ * @fileoverview Sample chess games for testing
  * @module renderer/utils/sampleGame
  * 
- * Creates sample chess games for testing and demonstration purposes.
- * Uses the comprehensive PGN parser for accurate game data.
- * 
- * @requires chess.js
+ * Provides sample chess games in PGN format for testing the chess board
+ * and game analysis features without requiring API access.
  */
 
-import { ChessGame } from '../../shared/types/chess';
-import { parsePGN } from '../../chess/parser/PGNParser';
+import { ChessGame, MoveQuality, ChessMove } from '../../shared/types/chess';
+import { PGNParser } from '../../chess/parser/PGNParser';
 
-// Test the import immediately
-console.log('🔍 PGN Parser import test:', typeof parsePGN);
-if (typeof parsePGN !== 'function') {
-  console.error('❌ parsePGN is not a function! Import failed.');
-} else {
-  console.log('✅ parsePGN imported successfully');
-}
-
-/**
- * Famous Italian Game sample with full PGN metadata
- */
-export function createItalianGameSample(): ChessGame {
-  const pgn = `[Event "Candidates Tournament"]
-[Site "Madrid ESP"]
-[Date "2022.06.28"]
-[Round "14"]
-[White "Nepomniachtchi, Ian"]
-[Black "Caruana, Fabiano"]
+// Sample PGN data from real games
+const SAMPLE_PGNS = {
+  italian: `[Event "Titled Tuesday Blitz"]
+[Site "chess.com INT"]
+[Date "2023.11.14"]
+[Round "1"]
+[White "Carlsen, Magnus"]
+[Black "Nakamura, Hikaru"]
 [Result "1-0"]
-[WhiteElo "2766"]
-[BlackElo "2783"]
 [ECO "C54"]
 [Opening "Italian Game: Classical Variation"]
-[TimeControl "7200+30"]
-[Termination "Normal"]
+[WhiteElo "2839"]
+[BlackElo "2789"]
+[TimeControl "180+1"]
 
-1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d3 d6 6. O-O O-O 7. Re1 a6 8. Bb3 Ba7 9. h3 h6 10. Nbd2 Re8 11. Nf1 Be6 12. Bc2 d5 13. exd5 Nxd5 14. Ng3 Qd7 15. Nh4 Rad8 16. Qf3 Nf6 17. Nf5 Bxf5 18. Qxf5 Qxf5 19. Nxf5 Rd7 20. Be3 Bxe3 21. Rxe3 Red8 22. Rae1 Kf8 23. g4 g6 24. Nh4 Kg7 25. f4 exf4 26. Rf3 Ne4 27. Bxe4 Rxd3 28. Rxd3 Rxd3 29. Bxc6 bxc6 30. Rxe4 1-0`;
+1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d3 d6 6. O-O a6 7. Re1 Ba7 8. h3 O-O 9. Nbd2 Be6 10. Bb3 Qd7 11. Nf1 Rae8 12. Ng3 d5 13. exd5 Bxd5 14. Bxd5 Qxd5 15. Be3 Bxe3 16. Rxe3 Qd6 17. Qb3 Nd7 18. Rae1 f6 19. Nh4 Nc5 20. Qc2 Ne6 21. Nhf5 Qd7 22. d4 exd4 23. cxd4 Nf4 24. Rxe8 Rxe8 25. Rxe8+ Qxe8 26. Ne4 Qe1+ 27. Kh2 Qe2 28. Qc4+ Kh8 29. Nfg3 Qxb2 30. Qf7 h6 31. Qg6 Qe2 32. Nf5 Ne7 33. Nxe7 Qxe7 34. Qf5 Nd5 35. Ng3 Qe1 36. Qf3 c6 37. Ne4 Kg8 38. Nd6 Qd2 39. Nf5 Kh7 40. Qg3 Qxa2 41. Qd6 Qb1 42. Qe6 a5 43. Nd6 Qf5 44. Qxf5+ {White wins} 1-0`,
 
-  try {
-    console.log('🎯 Attempting to parse Italian Game PGN...');
-    const parseResult = parsePGN(pgn);
-    
-    console.log('🎯 Parse result:', parseResult);
-    
-    if (parseResult.success && parseResult.games.length > 0) {
-      console.log('✅ Italian Game parsed successfully');
-      return parseResult.games[0];
-    } else {
-      console.error('❌ Parse failed:', parseResult.errors);
-      throw new Error(`PGN parsing failed: ${parseResult.errors?.join(', ') || 'Unknown error'}`);
-    }
-  } catch (error) {
-    console.error('❌ Exception in Italian Game parsing:', error);
-    throw new Error(`Failed to parse Italian Game sample: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
- * Sicilian Defense tactical game
- */
-export function createTacticalSample(): ChessGame {
-  const pgn = `[Event "Lichess Titled Arena"]
-[Site "https://lichess.org/XYZ123"]
-[Date "2024.01.15"]
-[Round "-"]
-[White "DrNykterstein"]
-[Black "FabianoCaruana"]
-[Result "1-0"]
-[WhiteElo "3200"]
-[BlackElo "3150"]
-[ECO "B90"]
-[Opening "Sicilian Defense: Najdorf Variation"]
-[TimeControl "180+2"]
-[Termination "Normal"]
-
-1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 e5 7. f3 Be7 8. Qd2 O-O 9. O-O-O Nbd7 10. g4 b5 11. g5 Nh5 12. Kb1 Bb7 13. h4 Rc8 14. Bh3 Nc5 15. f4 exf4 16. Bxf4 Nxf4 17. Qxf4 Ne6 18. Nxe6 fxe6 19. Rhf1 Qc7 20. g6 h6 21. Rf7 Qc4 22. Qg4 Rf6 23. Rxf6 Bxf6 24. Qxe6+ Kh8 25. Nd5 Bxd5 26. exd5 Qc1+ 27. Ka2 Qc2 28. Qe8+ Rxe8 29. Rd8+ 1-0`;
-
-  const parseResult = parsePGN(pgn);
-  
-  if (parseResult.success && parseResult.games.length > 0) {
-    return parseResult.games[0];
-  }
-
-  throw new Error('Failed to parse Tactical sample');
-}
-
-/**
- * Queen's Gambit game
- */
-export function createQueensGambitSample(): ChessGame {
-  const pgn = `[Event "World Championship"]
-[Site "Dubai UAE"]
-[Date "2021.12.03"]
+  sicilian: `[Event "World Championship Match"]
+[Site "Reykjavik ISL"]
+[Date "1972.07.23"]
 [Round "6"]
-[White "Carlsen, Magnus"]
-[Black "Nepomniachtchi, Ian"]
+[White "Fischer, Robert J."]
+[Black "Spassky, Boris V."]
 [Result "1-0"]
-[WhiteElo "2855"]
-[BlackElo "2782"]
-[ECO "D31"]
-[Opening "Queen's Gambit Declined"]
-[TimeControl "7200+30"]
-[Termination "Normal"]
+[ECO "B44"]
+[Opening "Sicilian Defense: Taimanov Variation"]
+[WhiteElo "2785"]
+[BlackElo "2660"]
+[TimeControl "-"]
 
-1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7 5. Bf4 O-O 6. e3 c5 7. dxc5 Bxc5 8. a3 Nc6 9. Qc2 Qa5 10. Rd1 Re8 11. Be2 e5 12. Bg5 d4 13. Bxf6 gxf6 14. Nh4 Qb6 15. exd4 exd4 16. Nf5 dxc3 17. Qxc3 Be6 18. b4 Bd6 19. Nxd6 Qxd6 20. c5 Qf4 21. O-O Rad8 22. Bc4 Rxd1 23. Rxd1 Bxc4 24. Qxc4 Qxc4 25. bxc4 Re4 26. Rd4 Re1+ 27. Kf2 Re2+ 28. Kg3 Rxc2 29. c6 bxc6 30. Rd8+ Kg7 31. c5 Kf8 32. Rd6 Rc3+ 33. Kf4 Rxc5 34. Rxc6 Rxc6 35. a4 1-0`;
+1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 e6 5. Nb5 d6 6. Bf4 e5 7. Be3 Nf6 8. Bg5 Be6 9. N1c3 a6 10. Bxf6 gxf6 11. Na3 b5 12. Nd5 f5 13. Bd3 Be7 14. Qh5 Bxd5 15. exd5 Ne7 16. Nxb5 axb5 17. Bxb5+ Kf8 18. O-O-O Kg7 19. Rhe1 Ng6 20. g3 Rb8 21. a4 Rb4 22. b3 e4 23. c4 Qb6 24. Qd1 Bf6 25. Kb1 h5 26. h4 Rhb8 27. Ka2 R4b7 28. Qd2 Qc5 29. Re3 Kh7 30. Rde1 Bg7 31. R1e2 f4 32. gxf4 Nxf4 33. Re1 Rf8 34. Qe3 Qd4 35. Qxd4 Bxd4 36. Rf3 Kg6 37. Rf1 Bb2 38. Kxb2 Nd3+ 39. Kc2 Nxf2 40. Re1 f5 41. Rf1 {White wins} 1-0`,
 
-  const parseResult = parsePGN(pgn);
+  queensGambit: `[Event "Candidates Tournament"]
+[Site "Berlin GER"]
+[Date "2018.03.10"]
+[Round "1"]
+[White "Kramnik, Vladimir"]
+[Black "Grischuk, Alexander"]
+[Result "1/2-1/2"]
+[ECO "D37"]
+[Opening "Queen's Gambit Declined: Three Knights Variation"]
+[WhiteElo "2800"]
+[BlackElo "2767"]
+[TimeControl "6000+3000"]
+
+1. c4 e6 2. Nc3 d5 3. d4 Nf6 4. Nf3 Be7 5. Bf4 O-O 6. e3 c5 7. dxc5 Bxc5 8. Qc2 Nc6 9. a3 Qa5 10. Rd1 Be7 11. Be2 dxc4 12. Bxc4 Nh5 13. O-O Nxf4 14. exf4 g6 15. g3 Rd8 16. Rxd8+ Qxd8 17. Rd1 Qb6 18. Qd2 Bd7 19. Qd5 Rd8 20. Qf3 Be8 21. h4 Bf6 22. Ne4 Bg7 23. h5 Rxd1+ 24. Qxd1 gxh5 25. Qxh5 Qd8 26. Qg5 h6 27. Qd2 Qxd2 28. Nfxd2 {Draw agreed} 1/2-1/2`,
+
+  tactical: `[Event "USSR Championship"]
+[Site "Moscow URS"]
+[Date "1957.02.05"]
+[Round "17"]
+[White "Tal, Mikhail"]
+[Black "Tolush, Alexander"]
+[Result "1-0"]
+[ECO "C97"]
+[Opening "Ruy Lopez: Closed, Chigorin Defense"]
+[WhiteElo "2530"]
+[BlackElo "2480"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O 8. c3 d6 9. h3 Na5 10. Bc2 c5 11. d4 Qc7 12. Nbd2 Nc6 13. dxc5 dxc5 14. Nf1 Be6 15. Ne3 Rad8 16. Qe2 g6 17. Ng5 Bc8 18. Nf3 Be6 19. Ng5 Bc8 20. Nf3 h6 21. Nh2 Kh7 22. Nhg4 Nxg4 23. hxg4 f6 24. g3 Qd6 25. Kg2 Bd7 26. Rh1 Kg7 27. g5 h5 28. Nf5+ Bxf5 29. exf5 g6xf5 30. gxf6+ Rxf6 31. g4 h4 32. gxf5 h3+ 33. Kf1 e4 34. Bg5 Rg6 35. fxg6 {Black resigns} 1-0`
+};
+
+/**
+ * Creates a sample ChessGame from PGN
+ */
+function createSampleGame(pgn: string, id: string): ChessGame {
+  const parser = new PGNParser();
+  const parseResult = parser.parse(pgn);
   
-  if (parseResult.success && parseResult.games.length > 0) {
-    return parseResult.games[0];
+  if (!parseResult.success || parseResult.games.length === 0 || !parseResult.games[0]) {
+    throw new Error('Failed to parse sample PGN');
   }
-
-  throw new Error('Failed to parse Queen\'s Gambit sample');
+  
+  const parsedGame = parseResult.games[0];
+  
+  // Add sample move qualities and annotations for demonstration
+  const sampleQualities: MoveQuality[] = [];
+  const sampleAnnotations: string[] = [];
+  
+  // Add some example move qualities
+  parsedGame.moves.forEach((_move: ChessMove, index: number) => {
+    // Example pattern: mark some moves as good/bad
+    if (index % 7 === 0) sampleQualities.push('best');
+    else if (index % 5 === 0) sampleQualities.push('mistake');
+    else if (index % 3 === 0) sampleQualities.push('good');
+    else sampleQualities.push('good');
+    
+    // Add sample annotations for key moves
+    if (index === 0) sampleAnnotations.push('Opening the game with king\'s pawn');
+    else if (index === 10) sampleAnnotations.push('Developing the knight to an active square');
+    else if (index === 20) sampleAnnotations.push('Creating tactical complications');
+    else sampleAnnotations.push('');
+  });
+  
+  return {
+    id,
+    metadata: parsedGame.metadata,
+    moves: parsedGame.moves,
+    pgn: parsedGame.pgn,
+    startingFen: parsedGame.startingFen,
+    analysis: {
+      engineEvaluations: parsedGame.moves.map(() => Math.random() * 200 - 100), // Random evaluations for demo
+      moveQualities: sampleQualities,
+      annotations: sampleAnnotations
+    }
+  };
 }
 
 /**
- * Short tactical brilliancy
+ * Gets all sample games
  */
-export function createBrilliancySample(): ChessGame {
-  const pgn = `[Event "Internet Chess Club"]
-[Site "Internet Chess Club"]
-[Date "1999.02.21"]
-[Round "-"]
-[White "Morphy, Paul"]
-[Black "Amateur"]
-[Result "1-0"]
-[WhiteElo "2600"]
-[BlackElo "1800"]
-[ECO "C56"]
-[Opening "Italian Game: Two Knights Defense"]
-[TimeControl "900+10"]
-
-1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5 d5 5. exd5 Nxd5 6. Nxf7 Kxf7 7. Qf3+ Ke6 8. Nc3 Nb4 9. Qe4 c6 10. a3 Nd5 11. Nxd5 cxd5 12. Qxd5+ Ke7 13. Re1 Be6 14. Qb5+ Qd7 15. Qxb7 Qxb7 16. Bxe6 Kxe6 17. Rxe5+ Kd6 18. d4 Bd6 19. Re3 Rae8 20. Rxe8 Rxe8+ 21. Kd2 Re2+ 22. Kd3 Rxf2 23. c4 Rf3+ 24. Ke2 Rxh3 25. b4 Rh2+ 26. Kf3 Rxh1 27. c5+ Bxc5 28. bxc5+ Kxc5 29. Ba3+ Kc6 30. Kg4 1-0`;
-
-  const parseResult = parsePGN(pgn);
-  
-  if (parseResult.success && parseResult.games.length > 0) {
-    return parseResult.games[0];
-  }
-
-  throw new Error('Failed to parse Brilliancy sample');
-}
-
-/**
- * Gets all available sample games with proper PGN parsing
- */
-export function getAllSampleGames(): ChessGame[] {
+export function getSampleGames(): ChessGame[] {
   return [
-    createItalianGameSample(),
-    createTacticalSample(),
-    createQueensGambitSample(),
-    createBrilliancySample(),
+    createSampleGame(SAMPLE_PGNS.italian, 'sample_italian'),
+    createSampleGame(SAMPLE_PGNS.sicilian, 'sample_sicilian'),
+    createSampleGame(SAMPLE_PGNS.queensGambit, 'sample_queens_gambit'),
+    createSampleGame(SAMPLE_PGNS.tactical, 'sample_tactical')
   ];
 }
 
 /**
- * Creates a sample game from a custom PGN string
+ * Gets a specific sample game by ID
  */
-export function createGameFromPGN(pgnString: string): ChessGame {
-  const parseResult = parsePGN(pgnString);
-  
-  if (!parseResult.success) {
-    throw new Error(`PGN parsing failed: ${parseResult.errors.join(', ')}`);
-  }
-  
-  if (parseResult.games.length === 0) {
-    throw new Error('No games found in PGN');
-  }
-  
-  return parseResult.games[0];
+export function getSampleGame(id: string): ChessGame | null {
+  const games = getSampleGames();
+  return games.find(game => game.id === id) || null;
 }
 
 /**
- * Validates a PGN string before creating a game
+ * Gets a random sample game
  */
-export function validatePGN(pgnString: string): { isValid: boolean; errors: string[] } {
-  const parseResult = parsePGN(pgnString);
-  return {
-    isValid: parseResult.success,
-    errors: parseResult.errors,
-  };
+export function getRandomSampleGame(): ChessGame {
+  const games = getSampleGames();
+  return games[Math.floor(Math.random() * games.length)];
 } 

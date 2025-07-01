@@ -1,120 +1,147 @@
 /**
- * @fileoverview Games List Panel component
+ * @fileoverview Games List Panel Component
  * @module renderer/components/layout/GamesListPanel
  * 
- * Left panel component that displays the user's games list,
- * sync functionality, and game selection interface.
+ * Left panel showing the list of synced chess games with sync controls
+ * and game selection functionality.
  * 
  * @requires react
+ * @requires zustand
  */
 
 import React, { useState } from 'react';
 import { useChessStore } from '../../stores/useChessStore';
-import { SampleGameSelector } from '../chess/SampleGameSelector';
+import { GameSyncForm } from '../common/GameSyncForm';
+import { getSampleGames } from '../../utils/sampleGame';
+import { ChessGame } from '../../../shared/types/chess';
 
 /**
- * Games List Panel component
+ * Games List Panel - Left panel of the application
  */
-export function GamesListPanel(): JSX.Element {
-  const { currentGame } = useChessStore();
-  const [showSampleGames, setShowSampleGames] = useState(false);
-
-  const handleSyncGames = () => {
-    console.log('Sync games functionality coming in Phase 3');
+export const GamesListPanel: React.FC = () => {
+  const { games, currentGame, loadGame } = useChessStore();
+  const [syncError, setSyncError] = useState<string>('');
+  const [syncSuccess, setSyncSuccess] = useState<string>('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  /**
+   * Handles game sync request
+   */
+  const handleSync = async (username: string, platform: 'chess.com' | 'lichess') => {
+    setSyncError('');
+    setSyncSuccess('');
+    setIsSyncing(true);
+    
+    try {
+      // TODO: Implement actual API sync
+      console.log(`Syncing games for ${username} from ${platform}`);
+      
+      // For now, just show a message
+      setTimeout(() => {
+        setSyncSuccess(`API integration coming soon! For now, loading sample games...`);
+        
+        // Load sample games for demonstration
+        const sampleGames = getSampleGames();
+        sampleGames.forEach(game => loadGame(game));
+        
+        setIsSyncing(false);
+      }, 1500);
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : 'Failed to sync games');
+      setIsSyncing(false);
+    }
   };
-
+  
+  /**
+   * Loads sample games for testing
+   */
+  const loadSampleGames = () => {
+    const sampleGames = getSampleGames();
+    sampleGames.forEach(game => loadGame(game));
+    setSyncSuccess(`Loaded ${sampleGames.length} sample games`);
+  };
+  
   return (
-    <div className="panel games-list-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className="panel-header" style={{ flexShrink: 0, padding: '8px 12px' }}>
-        <h2 className="panel-title" style={{ fontSize: '1rem', margin: 0 }}>My Games</h2>
-        {currentGame && (
-          <div className="current-game-indicator" style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span className="indicator-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }}></span>
-            <span className="indicator-text">Game loaded</span>
-          </div>
-        )}
+    <div className="games-list-panel">
+      <div className="panel-header">
+        <h2 className="panel-title">Games</h2>
       </div>
       
-      <div className="panel-content" style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
-        {!showSampleGames ? (
-          <>
-            <div className="sync-section" style={{ marginBottom: '16px' }}>
-              <button 
-                className="button-primary sync-button" 
-                onClick={handleSyncGames}
-                style={{ 
-                  width: '100%', 
-                  padding: '8px 12px',
-                  fontSize: '0.875rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-              >
-                <span className="button-icon">🔄</span>
-                Sync Games
-              </button>
-              <p className="sync-description" style={{ 
-                fontSize: '0.75rem', 
-                textAlign: 'center',
-                margin: '8px 0 0 0',
-                opacity: 0.8
-              }}>
-                Connect to Chess.com or Lichess
-              </p>
-            </div>
-
-            <div className="empty-state" style={{ textAlign: 'center' }}>
-              <div className="empty-icon" style={{ fontSize: '2.5rem', marginBottom: '12px', opacity: 0.5 }}>🏆</div>
-              <h3 style={{ fontSize: '0.875rem', margin: '0 0 8px 0' }}>No Games Yet</h3>
-              <p style={{ fontSize: '0.75rem', margin: '0 0 16px 0', opacity: 0.8 }}>
-                Your games will appear here once synced.
-              </p>
-              
-              <div className="sample-games-section">
-                <p style={{ fontSize: '0.75rem', margin: '0 0 8px 0' }}>Want to explore? Try samples:</p>
-                <button 
-                  className="button-secondary sample-games-button"
-                  onClick={() => setShowSampleGames(true)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    fontSize: '0.875rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <span className="button-icon">🎯</span>
-                  Browse Sample Games
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="sample-games-container">
-            <div className="sample-games-header" style={{ marginBottom: '12px' }}>
-              <button 
-                className="back-button"
-                onClick={() => setShowSampleGames(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '4px 0',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                  opacity: 0.8
-                }}
-              >
-                ← Back to Games List
-              </button>
-            </div>
-            <SampleGameSelector />
+      <div className="sync-section">
+        <GameSyncForm
+          onSync={handleSync}
+          isSyncing={isSyncing}
+          error={syncError}
+          success={syncSuccess}
+        />
+        
+        <div className="sample-games-section">
+          <div className="divider">
+            <span>or</span>
           </div>
+          <button
+            className="sample-games-button"
+            onClick={loadSampleGames}
+            disabled={isSyncing}
+          >
+            Load Sample Games
+          </button>
+        </div>
+      </div>
+      
+      <div className="games-list">
+        {games.length === 0 ? (
+          <div className="empty-state">
+            <p>No games loaded</p>
+            <p className="empty-state-hint">
+              Sync your games from Chess.com or Lichess, or load sample games to get started
+            </p>
+          </div>
+        ) : (
+          games.map((game: ChessGame) => (
+            <div
+              key={game.id}
+              className={`game-card ${currentGame?.id === game.id ? 'active' : ''}`}
+              onClick={() => loadGame(game)}
+            >
+              <div className="game-players">
+                <span className="player white-player">
+                  {game.metadata.white.name}
+                  {game.metadata.white.rating && (
+                    <span className="rating">({game.metadata.white.rating})</span>
+                  )}
+                </span>
+                <span className="vs">vs</span>
+                <span className="player black-player">
+                  {game.metadata.black.name}
+                  {game.metadata.black.rating && (
+                    <span className="rating">({game.metadata.black.rating})</span>
+                  )}
+                </span>
+              </div>
+              
+              <div className="game-info">
+                <span className="game-result">
+                  {game.metadata.result === '1-0' && '1-0'}
+                  {game.metadata.result === '0-1' && '0-1'}
+                  {game.metadata.result === '1/2-1/2' && '½-½'}
+                  {game.metadata.result === '*' && '*'}
+                </span>
+                <span className="game-date">
+                  {game.metadata.date}
+                </span>
+              </div>
+              
+              {game.metadata.opening && (
+                <div className="game-opening">
+                  {game.metadata.eco && <span className="eco">{game.metadata.eco}</span>}
+                  <span className="opening-name">{game.metadata.opening}</span>
+                </div>
+              )}
+            </div>
+          ))
         )}
       </div>
     </div>
   );
-} 
+}; 

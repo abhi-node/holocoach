@@ -11,30 +11,29 @@
 import { useChessStore } from '../../stores/useChessStore';
 
 /**
- * Player information display
+ * Props for PlayerInfo component
  */
 interface PlayerInfoProps {
   name: string;
   rating?: number;
   color: 'white' | 'black';
-  result: string;
+  isWinner: boolean;
 }
 
-function PlayerInfo({ name, rating, color, result }: PlayerInfoProps): JSX.Element {
-  const isWinner = (color === 'white' && result === '1-0') || (color === 'black' && result === '0-1');
-  const isDraw = result === '1/2-1/2';
-  
+/**
+ * Player information display
+ */
+function PlayerInfo({ name, rating, color, isWinner }: PlayerInfoProps): JSX.Element {
   return (
-    <div className={`player-info ${color}-player`}>
+    <div className={`player-info ${color} ${isWinner ? 'winner' : ''}`}>
+      <div className="player-icon">
+        {color === 'white' ? '♔' : '♚'}
+      </div>
       <div className="player-details">
-        <span className="player-name">{name}</span>
-        {rating && <span className="player-rating">({rating})</span>}
+        <div className="player-name">{name}</div>
+        {rating && <div className="player-rating">{rating}</div>}
       </div>
-      <div className="game-result">
-        {isWinner && <span className="result-badge winner">W</span>}
-        {isDraw && <span className="result-badge draw">D</span>}
-        {!isWinner && !isDraw && <span className="result-badge loser">L</span>}
-      </div>
+      {isWinner && <div className="winner-indicator">✓</div>}
     </div>
   );
 }
@@ -56,68 +55,65 @@ function GameMetadata(): JSX.Element {
   const { metadata } = currentGame;
   
   return (
-    <div className="game-metadata">
+    <div className="game-info">
       <div className="players-section">
         <PlayerInfo
-          name={metadata.white}
-          rating={metadata.whiteRating}
+          name={metadata.white.name}
+          rating={metadata.white.rating}
           color="white"
-          result={metadata.result}
+          isWinner={metadata.result === '1-0'}
         />
-        <div className="vs-separator">vs</div>
+        
         <PlayerInfo
-          name={metadata.black}
-          rating={metadata.blackRating}
+          name={metadata.black.name}
+          rating={metadata.black.rating}
           color="black"
-          result={metadata.result}
+          isWinner={metadata.result === '0-1'}
         />
       </div>
       
       <div className="game-details">
-        <div className="detail-grid">
-          <div className="detail-item">
-            <span className="detail-label">Event:</span>
-            <span className="detail-value">{metadata.platform === 'lichess' ? 'Lichess' : 'Chess.com'}</span>
+        <div className="detail-row">
+          <span className="detail-label">Platform</span>
+          <span className="detail-value">{metadata.source === 'lichess' ? 'Lichess' : metadata.source === 'chess.com' ? 'Chess.com' : 'Local'}</span>
+        </div>
+        
+        <div className="detail-row">
+          <span className="detail-label">Date</span>
+          <span className="detail-value">{metadata.date}</span>
+        </div>
+        
+        {metadata.timeControl && (
+          <div className="detail-row">
+            <span className="detail-label">Time</span>
+            <span className="detail-value">{metadata.timeControl}</span>
           </div>
-          
-          <div className="detail-item">
-            <span className="detail-label">Date:</span>
-            <span className="detail-value">{metadata.date.toLocaleDateString()}</span>
+        )}
+        
+        {metadata.opening && (
+          <div className="detail-row">
+            <span className="detail-label">Opening</span>
+            <span className="detail-value">
+              {metadata.eco && <span className="eco-code">{metadata.eco}</span>}
+              <span className="opening-name">{metadata.opening}</span>
+            </span>
           </div>
-          
-          {metadata.timeControl && (
-            <div className="detail-item">
-              <span className="detail-label">Time Control:</span>
-              <span className="detail-value">{metadata.timeControl}</span>
-            </div>
-          )}
-          
-          {metadata.opening && (
-            <div className="detail-item">
-              <span className="detail-label">Opening:</span>
-              <span className="detail-value">{metadata.opening}</span>
-            </div>
-          )}
-          
-          {metadata.eco && (
-            <div className="detail-item">
-              <span className="detail-label">ECO:</span>
-              <span className="detail-value">{metadata.eco}</span>
-            </div>
-          )}
-          
-          <div className="detail-item">
-            <span className="detail-label">Moves:</span>
-            <span className="detail-value">{currentGame.moves.length}</span>
-          </div>
+        )}
+        
+        <div className="detail-row">
+          <span className="detail-label">Result</span>
+          <span className={`detail-value result result-${getResultClass(metadata.result)}`}>
+            {formatResult(metadata.result)}
+          </span>
         </div>
       </div>
       
-      {currentGame.analyzed && (
+      {currentGame.analysis && (
         <div className="analysis-status">
-          <div className="analysis-badge">
-            ✓ Analyzed {currentGame.analyzedAt ? `on ${currentGame.analyzedAt.toLocaleDateString()}` : ''}
-          </div>
+          <span className="status-icon">✓</span>
+          <span className="status-text">
+            Game analyzed
+          </span>
         </div>
       )}
     </div>
@@ -161,9 +157,33 @@ function GameResult(): JSX.Element {
 }
 
 /**
+ * Gets CSS class for result display
+ */
+function getResultClass(result: string): string {
+  switch (result) {
+    case '1-0': return 'white-win';
+    case '0-1': return 'black-win';
+    case '1/2-1/2': return 'draw';
+    default: return 'ongoing';
+  }
+}
+
+/**
+ * Formats result for display
+ */
+function formatResult(result: string): string {
+  switch (result) {
+    case '1-0': return '1-0';
+    case '0-1': return '0-1';
+    case '1/2-1/2': return '½-½';
+    default: return '*';
+  }
+}
+
+/**
  * Main game information component
  */
-export function GameInfoComponent(): JSX.Element {
+export const GameInfoComponent: React.FC = () => {
   return (
     <div className="game-info-component">
       <div className="game-info-header">

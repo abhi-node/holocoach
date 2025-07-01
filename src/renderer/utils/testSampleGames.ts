@@ -1,16 +1,14 @@
 /**
- * @fileoverview Sample Games Test Utility
+ * @fileoverview Test utility for sample games
  * @module renderer/utils/testSampleGames
  * 
- * Simple utility to test that all sample games load correctly
- * and have valid PGN data.
+ * Tests the sample game creation functions to ensure they work correctly.
  */
 
-import { 
-  createItalianGameSample, 
-  createTacticalSample, 
-  createQueensGambitSample, 
-  createBrilliancySample 
+import {
+  getSampleGames,
+  getSampleGame,
+  getRandomSampleGame
 } from './sampleGame';
 
 /**
@@ -29,10 +27,10 @@ interface TestResult {
  */
 export function testAllSampleGames(): TestResult[] {
   const tests = [
-    { name: 'Italian Game', loader: createItalianGameSample },
-    { name: 'Sicilian Tactical', loader: createTacticalSample },
-    { name: 'Queen\'s Gambit', loader: createQueensGambitSample },
-    { name: 'Morphy Brilliancy', loader: createBrilliancySample },
+    { name: 'Italian Game', loader: getSampleGame('sample_italian') },
+    { name: 'Sicilian Tactical', loader: getSampleGame('sample_sicilian') },
+    { name: 'Queen\'s Gambit', loader: getSampleGame('sample_queens_gambit') },
+    { name: 'Morphy Brilliancy', loader: getSampleGame('sample_morphy_brilliancy') },
   ];
 
   const results: TestResult[] = [];
@@ -40,7 +38,7 @@ export function testAllSampleGames(): TestResult[] {
   for (const test of tests) {
     try {
       console.log(`🧪 Testing ${test.name}...`);
-      const game = test.loader();
+      const game = test.loader;
       
       // Validate the game has required data
       if (!game) {
@@ -64,7 +62,7 @@ export function testAllSampleGames(): TestResult[] {
         gameName: test.name,
         success: true,
         moveCount: game.moves.length,
-        players: `${game.metadata.white} vs ${game.metadata.black}`,
+        players: `${game.metadata.white.name} vs ${game.metadata.black.name}`,
       });
     } catch (error) {
       console.error(`❌ ${test.name} failed:`, error);
@@ -115,4 +113,45 @@ export function logTestResults(): void {
 export function validateSampleGames(): boolean {
   const results = testAllSampleGames();
   return results.every(result => result.success);
+}
+
+// Test the sample games
+export function testSampleGames(): void {
+  console.log('🧪 Testing sample games...');
+  
+  try {
+    // Test getting all sample games
+    const allGames = getSampleGames();
+    console.log(`✅ Successfully loaded ${allGames.length} sample games`);
+    
+    allGames.forEach(game => {
+      console.log(`  - ${game.metadata.opening || 'Unknown'}: ${game.metadata.white.name} vs ${game.metadata.black.name} (${game.moves.length} moves)`);
+    });
+    
+    // Test getting specific game
+    const italianGame = getSampleGame('sample_italian');
+    if (italianGame) {
+      console.log('✅ Italian Game loaded:', {
+        white: italianGame.metadata.white.name,
+        black: italianGame.metadata.black.name,
+        moves: italianGame.moves.length
+      });
+    }
+    
+    // Test getting random game
+    const randomGame = getRandomSampleGame();
+    console.log('✅ Random game loaded:', {
+      opening: randomGame.metadata.opening,
+      result: randomGame.metadata.result
+    });
+    
+    console.log('✅ All tests passed!');
+  } catch (error) {
+    console.error('❌ Sample game test failed:', error);
+  }
+}
+
+// Run the test
+if (require.main === module) {
+  testSampleGames();
 } 

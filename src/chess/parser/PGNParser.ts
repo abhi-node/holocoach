@@ -137,7 +137,7 @@ export class PGNParser {
       const metadata = this.extractMetadata(parsed.headers, gameIndex);
       
       // Parse moves using chess.js
-      const moves = this.parseMoves(parsed.moveText, metadata.id);
+      const moves = this.parseMoves(parsed.moveText, metadata.sourceId || `game-${gameIndex}`);
       
       if (moves.length === 0) {
         this.warnings.push(`Game ${gameIndex + 1}: No valid moves found`);
@@ -145,11 +145,16 @@ export class PGNParser {
       }
 
       return {
+        id: metadata.sourceId || `game-${gameIndex}`,
         metadata,
         moves,
         pgn: pgnString.trim(),
-        analyzed: false,
         startingFen: parsed.headers.FEN || undefined,
+        analysis: {
+          engineEvaluations: [],
+          moveQualities: [],
+          annotations: []
+        }
       };
     } catch (error) {
       throw new Error(`Failed to parse game: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -205,24 +210,22 @@ export class PGNParser {
    * Extracts game metadata from PGN headers
    */
   private extractMetadata(headers: PGNHeaders, gameIndex: number): GameMetadata {
-    const id = headers.Site && headers.Round 
-      ? `${headers.Site}-${headers.Round}`
-      : `game-${gameIndex + 1}`;
-
     // Determine platform from Site header
     const site = headers.Site?.toLowerCase() || '';
-    let platform: 'chess.com' | 'lichess' = 'chess.com';
+    let source: 'chess.com' | 'lichess' | 'local' = 'local';
     
     if (site.includes('lichess')) {
-      platform = 'lichess';
+      source = 'lichess';
+    } else if (site.includes('chess.com')) {
+      source = 'chess.com';
     }
 
     // Parse date
-    let date = new Date();
-    if (headers.Date) {
-      const dateMatch = headers.Date.match(/(\d{4})\.(\d{2})\.(\d{2})/);
+    let dateString = headers.Date || new Date().toISOString().split('T')[0];
+    if (dateString) {
+      const dateMatch = dateString.match(/(\d{4})\.(\d{2})\.(\d{2})/);
       if (dateMatch) {
-        date = new Date(parseInt(dateMatch[1]), parseInt(dateMatch[2]) - 1, parseInt(dateMatch[3]));
+        dateString = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
       }
     }
 
@@ -234,18 +237,25 @@ export class PGNParser {
     const result = this.parseResult(headers.Result);
 
     return {
-      id,
-      platform,
-      white: headers.White || 'Unknown',
-      black: headers.Black || 'Unknown',
-      whiteRating,
-      blackRating,
+      event: headers.Event || 'Unknown Event',
+      site: headers.Site || 'Unknown Site',
+      date: dateString,
+      round: headers.Round || '',
+      white: {
+        name: headers.White || 'Unknown',
+        rating: whiteRating
+      },
+      black: {
+        name: headers.Black || 'Unknown',
+        rating: blackRating
+      },
       result,
       timeControl: headers.TimeControl,
-      date,
       opening: headers.Opening,
       eco: headers.ECO,
-      url: headers.Link || headers.Site,
+      source,
+      sourceId: `${source}-${gameIndex}-${Date.now()}`,
+      sourceUrl: headers.Link || headers.Site,
     };
   }
 

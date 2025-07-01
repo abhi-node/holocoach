@@ -66,39 +66,68 @@ export type MoveQuality =
   | 'blunder';    // 200cp+ worse
 
 /**
+ * Game source platform
+ */
+export type GameSource = 'chess.com' | 'lichess' | 'local';
+
+/**
+ * Player information
+ */
+export interface PlayerInfo {
+  name: string;
+  rating?: number;
+}
+
+/**
  * Chess game metadata
  */
 export interface GameMetadata {
-  /** Game ID from platform */
-  id: string;
-  /** Platform (chess.com, lichess) */
-  platform: 'chess.com' | 'lichess';
-  /** White player name */
-  white: string;
-  /** Black player name */
-  black: string;
-  /** White player rating */
-  whiteRating?: number;
-  /** Black player rating */
-  blackRating?: number;
+  /** Event name */
+  event: string;
+  /** Site/URL where game was played */
+  site: string;
+  /** Game date (YYYY-MM-DD format) */
+  date: string;
+  /** Round (for tournaments) */
+  round: string;
+  /** White player info */
+  white: PlayerInfo;
+  /** Black player info */
+  black: PlayerInfo;
   /** Game result */
   result: '1-0' | '0-1' | '1/2-1/2' | '*';
-  /** Time control */
-  timeControl?: string;
-  /** Game date */
-  date: Date;
+  /** ECO opening code */
+  eco?: string;
   /** Opening name */
   opening?: string;
-  /** ECO code */
-  eco?: string;
-  /** Game URL */
-  url?: string;
+  /** Time control */
+  timeControl?: string;
+  /** Source platform */
+  source: GameSource;
+  /** ID from source platform */
+  sourceId: string;
+  /** URL to view game on source platform */
+  sourceUrl?: string;
+}
+
+/**
+ * Game analysis data
+ */
+export interface GameAnalysis {
+  /** Engine evaluations for each position */
+  engineEvaluations: number[];
+  /** Move quality classifications */
+  moveQualities: MoveQuality[];
+  /** AI annotations for moves */
+  annotations: string[];
 }
 
 /**
  * Complete chess game representation
  */
 export interface ChessGame {
+  /** Unique game ID */
+  id: string;
   /** Game metadata */
   metadata: GameMetadata;
   /** Game moves */
@@ -107,10 +136,8 @@ export interface ChessGame {
   pgn: string;
   /** Starting FEN (if not standard) */
   startingFen?: string;
-  /** Whether game has been analyzed */
-  analyzed: boolean;
-  /** Analysis completion timestamp */
-  analyzedAt?: Date;
+  /** Analysis data */
+  analysis: GameAnalysis;
 }
 
 /**

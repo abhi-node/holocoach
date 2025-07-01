@@ -118,7 +118,7 @@ export function App(): JSX.Element {
 
   const layoutStyles: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: '240px 1fr 280px',  // Made both side panels narrower
+    gridTemplateColumns: '280px 1fr 280px',  // Increased games panel from 240px to 280px
     gap: '10px',
     padding: '10px',
     flex: 1,

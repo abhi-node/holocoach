@@ -21,8 +21,14 @@ interface ChessStoreState extends GameState {
   /** Drag and drop state */
   dragState: DragState;
   
+  /** All loaded games */
+  games: ChessGame[];
+  
   /** Actions */
   loadGame: (game: ChessGame) => void;
+  addGames: (games: ChessGame[]) => void;
+  removeGame: (gameId: string) => void;
+  clearGames: () => void;
   goToMove: (moveIndex: number) => void;
   goToStart: () => void;
   goToEnd: () => void;
@@ -102,6 +108,7 @@ export const useChessStore = create<ChessStoreState>()(
     persist(
       (set, get) => ({
         ...createInitialState(),
+        games: [],
         dragState: {
           isDragging: false,
           draggedPiece: null,
@@ -114,7 +121,7 @@ export const useChessStore = create<ChessStoreState>()(
          */
         loadGame: (game: ChessGame) => {
           const newChess = new Chess();
-          set({
+          set((state) => ({
             chess: newChess,
             currentGame: game,
             currentMoveIndex: -1,
@@ -122,6 +129,45 @@ export const useChessStore = create<ChessStoreState>()(
             possibleMoves: [],
             lastMove: null,
             isLoading: false,
+            // Add game to games list if not already present
+            games: state.games.some(g => g.id === game.id) 
+              ? state.games 
+              : [...state.games, game],
+          }));
+        },
+
+        /**
+         * Adds multiple games to the list
+         */
+        addGames: (games: ChessGame[]) => {
+          set((state) => {
+            const existingIds = new Set(state.games.map(g => g.id));
+            const newGames = games.filter(g => !existingIds.has(g.id));
+            return {
+              games: [...state.games, ...newGames],
+            };
+          });
+        },
+
+        /**
+         * Removes a game from the list
+         */
+        removeGame: (gameId: string) => {
+          set((state) => ({
+            games: state.games.filter(g => g.id !== gameId),
+            // Clear current game if it's the one being removed
+            currentGame: state.currentGame?.id === gameId ? null : state.currentGame,
+          }));
+        },
+
+        /**
+         * Clears all games
+         */
+        clearGames: () => {
+          set({
+            games: [],
+            currentGame: null,
+            currentMoveIndex: -1,
           });
         },
 

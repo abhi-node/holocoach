@@ -52,16 +52,15 @@
 1. Create Chess.com API client with rate limiting
 2. Create Lichess API client with rate limiting
 3. Implement game fetching with error handling
-4. Add username configuration in settings
+4. Add field above sync games to enter username, and lichess/chess.com button
 5. Create unified game format converter
 
 ### 2.2 Game Synchronization
 **Steps**:
 1. Build GameFetcher service in main process
-2. Implement "Sync Games" button functionality
+2. Implement "Sync Games" button functionality - sync 10 latest games
 3. Add progress indicators during sync
-4. Store fetched games in SQLite
-5. Handle duplicate game detection
+4. Handle duplicate game detection
 
 ### 2.3 API Error Handling
 **Steps**:
