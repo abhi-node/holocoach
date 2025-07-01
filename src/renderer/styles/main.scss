@@ -1,0 +1,1961 @@
+/**
+ * @fileoverview Main stylesheet with theme system and component styles
+ * @module renderer/styles/main
+ * 
+ * Implements the minimalist theme system with CSS custom properties
+ * for light/dark mode support and responsive design.
+ */
+
+// Responsive Breakpoints
+$breakpoint-compact: 1200px;   // Stack panels
+$breakpoint-standard: 1440px;  // Comfortable layout
+$breakpoint-wide: 1920px;      // Spacious layout
+
+// Import system fonts
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+// =============================================================================
+// CSS Custom Properties (Theme System)
+// =============================================================================
+
+:root {
+  // Light Mode (default)
+  --bg-base: #ffffff;
+  --bg-surface: #f8fafc;
+  --bg-panel: #ffffff;
+  --bg-hover: #f8fafc;
+  --bg-active: #f1f5f9;
+  
+  --text-primary: #334155;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-disabled: #94a3b8;
+  
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  
+  // Chess colors (consistent across themes)
+  --board-light: #f0d9b5;
+  --board-dark: #b58863;
+  --move-best: #059669;
+  --move-mistake: #dc2626;
+  --move-blunder: #991b1b;
+  
+  // Interactive states
+  --focus-ring: #3b82f6;
+  
+  // Shadows
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.05);
+  
+  // Spacing (8px grid)
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  
+  // Typography
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+}
+
+// Dark Mode
+[data-theme="dark"] {
+  --bg-base: #0f1419;      // Dark blue-gray instead of pure black
+  --bg-surface: #1a1f2e;   // Lighter surface for contrast
+  --bg-panel: #242938;     // Even lighter for panel headers
+  --bg-hover: #2d3445;     // Hover state
+  --bg-active: #373e52;    // Active state
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-disabled: #475569;
+  
+  --border-subtle: #2d3445;
+  --border-default: #3f4659;
+  --border-strong: #525a70;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+// =============================================================================
+// Base Styles
+// =============================================================================
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--font-base);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+  overflow: hidden; // Prevent scrolling on main body
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+// =============================================================================
+// Layout System
+// =============================================================================
+
+.app {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-4) 0;
+  background-color: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  
+  .app-title {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    
+    h1 {
+      margin: 0;
+      font-size: var(--font-xl);
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .app-subtitle {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+  }
+  
+  .app-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    
+    .theme-toggle {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      padding: var(--space-2);
+      cursor: pointer;
+      font-size: var(--font-base);
+      transition: all 0.15s ease;
+      
+      &:hover {
+        background: var(--bg-hover);
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+.app-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 
+    minmax(240px, 1fr)     /* Games list */
+    minmax(480px, 2.5fr)   /* Game analyzer */
+    minmax(320px, 1.2fr);  /* AI chat */
+  gap: var(--space-4);
+  padding: var(--space-4);
+  overflow: hidden;
+  
+  // Responsive breakpoints
+  @media (max-width: 1440px) {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    overflow-y: auto;
+  }
+}
+
+.app-sidebar, .app-aside {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+}
+
+// =============================================================================
+// Panel Components
+// =============================================================================
+
+.panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.panel-header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-panel);
+}
+
+.panel-title {
+  font-size: var(--font-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.panel-content {
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+}
+
+// =============================================================================
+// Button Components
+// =============================================================================
+
+.button-primary, .button-secondary {
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: 6px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.button-primary {
+  background: var(--text-primary);
+  color: var(--bg-base);
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+.button-secondary {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+
+  &:hover:not(:disabled) {
+    background: var(--text-primary);
+    color: var(--bg-base);
+    border-color: var(--text-primary);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+// =============================================================================
+// Games List Panel Styles
+// =============================================================================
+
+.games-list-panel {
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .current-game-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+
+      .indicator-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--move-best);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+    }
+  }
+
+  .sync-section {
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--border-default);
+
+    .sync-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+
+      .button-icon {
+        font-size: var(--font-base);
+      }
+    }
+
+    .sync-description {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+      text-align: center;
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--space-8) var(--space-4);
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: var(--space-6);
+      opacity: 0.5;
+    }
+
+    h3 {
+      margin: 0 0 var(--space-4) 0;
+      font-size: var(--font-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    p {
+      margin: 0 0 var(--space-8) 0;
+      color: var(--text-secondary);
+      font-size: var(--font-sm);
+      line-height: 1.5;
+    }
+
+    .sample-games-section {
+      .sample-games-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        width: 100%;
+
+        .button-icon {
+          font-size: var(--font-base);
+        }
+      }
+    }
+  }
+
+  .sample-games-container {
+    .sample-games-header {
+      margin-bottom: var(--space-6);
+
+      .back-button {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: var(--font-sm);
+        cursor: pointer;
+        padding: var(--space-2) 0;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: var(--text-primary);
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// Game Analyzer Panel Styles
+// =============================================================================
+
+// No game selected state
+.no-game-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-8);
+  max-width: 500px;
+  margin: 0 auto;
+
+  .no-game-icon {
+    font-size: 4rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-6);
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin: 0 0 var(--space-8) 0;
+    color: var(--text-secondary);
+    font-size: var(--font-base);
+    line-height: 1.6;
+  }
+
+  .no-game-hints {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    width: 100%;
+
+    .hint-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-4);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      text-align: left;
+
+      .hint-icon {
+        font-size: var(--font-lg);
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      span:last-child {
+        color: var(--text-secondary);
+        font-size: var(--font-sm);
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Responsive layout removed - using inline styles in component
+
+// =============================================================================
+// Chess Board Styles
+// =============================================================================
+
+.chess-board-container {
+  // Container styles handled inline in component
+}
+
+.chess-board-header {
+  // Header styles handled inline in component
+}
+
+.flip-board-button {
+  transition: all 150ms ease-out;
+  
+  &:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.chess-board-wrapper {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: 1fr 24px;
+  gap: 4px;
+  width: 424px; // Fixed: 400 + 24 for coordinates
+  height: 424px; // Fixed: 400 + 24 for coordinates
+  margin: 0 auto;
+}
+
+.chess-board {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  border: 2px solid var(--border-default);
+  border-radius: 4px;
+  overflow: hidden;
+  width: 400px; // Fixed width
+  height: 400px; // Fixed height
+  user-select: none;
+  background-color: var(--bg-surface);
+}
+
+.chess-square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 50px; // Fixed: 400px / 8
+  height: 50px; // Fixed: 400px / 8
+  
+  &.light {
+    background-color: var(--board-light);
+  }
+  
+  &.dark {
+    background-color: var(--board-dark);
+  }
+  
+  &.selected {
+    background-color: rgba(255, 255, 0, 0.4) !important;
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 0, 0.7);
+  }
+  
+  &.last-move {
+    background-color: rgba(255, 255, 0, 0.3) !important;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 0, 0.5);
+  }
+  
+  &.possible-move {
+    &::after {
+      content: '';
+      position: absolute;
+      width: 16px; // Sized for 50px squares
+      height: 16px; // Sized for 50px squares
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+    }
+  }
+  
+  &:hover {
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.1);
+      pointer-events: none;
+      z-index: 1;
+    }
+  }
+}
+
+.chess-piece-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  pointer-events: auto;
+  z-index: 2;
+  
+  &:active {
+    cursor: grabbing;
+  }
+  
+  // Prevent text selection on pieces
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.chess-piece-svg {
+  // Fixed size to match squares
+  width: 50px !important;
+  height: 50px !important;
+  
+  // Theme-aware piece colors
+  color: var(--text-primary);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  transition: transform 150ms ease-out;
+  
+  // Piece color differentiation
+  [data-theme="light"] & {
+    &.white-piece {
+      color: #ffffff;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+    }
+    
+    &.black-piece {
+      color: #000000;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    }
+  }
+  
+  [data-theme="dark"] & {
+    &.white-piece {
+      color: #f8fafc;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+    }
+    
+    &.black-piece {
+      color: #1a1a1a;
+      filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.1));
+    }
+  }
+  
+  .chess-piece-container:hover & {
+    transform: scale(1.05);
+  }
+  
+  .chess-piece-container:active & {
+    transform: scale(0.95);
+  }
+}
+
+.move-indicator {
+  width: 16px; // Sized for 50px squares
+  height: 16px; // Sized for 50px squares
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.capture-indicator {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  border: 2px solid rgba(255, 0, 0, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+// Coordinate labels
+.rank-coordinates {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  width: 24px; // Fixed width
+  height: 400px; // Fixed: Match board height
+}
+
+.file-coordinates {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 400px; // Fixed: Match board width
+  height: 24px; // Fixed height
+}
+
+.rank-label,
+.file-label {
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+// Keep consistent sizing - no responsive changes to prevent glitchy behavior
+
+// Removed duplicate game analyzer panel styles
+
+// =============================================================================
+// AI Chat Panel Styles
+// =============================================================================
+
+.ai-chat-panel {
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .messages-area {
+    flex: 1;
+    overflow-y: auto; // Only messages can scroll
+    min-height: 0;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: var(--space-8) var(--space-4);
+    
+    .suggested-questions {
+      margin-top: var(--space-4);
+      text-align: left;
+      
+      ul {
+        list-style: none;
+        margin-top: var(--space-2);
+        
+        li {
+          padding: var(--space-1) 0;
+          font-style: italic;
+          color: var(--text-muted);
+        }
+      }
+    }
+  }
+  
+  .messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  .message {
+    padding: var(--space-4);
+    border-radius: 8px;
+    max-width: 80%;
+    
+    &.user-message {
+      background-color: var(--text-primary);
+      color: var(--bg-base);
+      align-self: flex-end;
+    }
+    
+    &.ai-message {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      align-self: flex-start;
+    }
+    
+    .message-content {
+      margin-bottom: var(--space-1);
+    }
+    
+    .message-time {
+      font-size: var(--font-xs);
+      opacity: 0.7;
+    }
+  }
+  
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    
+    span {
+      width: 8px;
+      height: 8px;
+      background-color: var(--text-muted);
+      border-radius: 50%;
+      animation: pulse 1.4s ease-in-out infinite both;
+      
+      &:nth-child(1) { animation-delay: -0.32s; }
+      &:nth-child(2) { animation-delay: -0.16s; }
+      &:nth-child(3) { animation-delay: 0s; }
+    }
+  }
+  
+  .chat-input-area {
+    flex-shrink: 0;
+  }
+  
+  .input-container {
+    display: flex;
+    gap: var(--space-2);
+    align-items: flex-end;
+  }
+  
+  .chat-input {
+    flex: 1;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    resize: none;
+    font-family: inherit;
+    font-size: var(--font-sm);
+    color: var(--text-primary);
+    background-color: var(--bg-base);
+    
+    &:focus {
+      outline: none;
+      border-color: var(--focus-ring);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+  
+  .send-button {
+    flex-shrink: 0;
+  }
+}
+
+// =============================================================================
+// Utility Classes
+// =============================================================================
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+// =============================================================================
+// Animations
+// =============================================================================
+
+@keyframes pulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Respect user motion preferences
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// =============================================================================
+// Move Navigation Styles
+// =============================================================================
+
+.move-navigation {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.move-navigation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  
+  h3 {
+    font-size: var(--font-lg);
+    font-weight: 500;
+    margin: 0;
+    color: var(--text-primary);
+  }
+}
+
+.navigation-controls {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.nav-button {
+  background: none;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  transition: all 150ms ease-out;
+  
+  &:hover:not(:disabled) {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+  
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+  
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.move-list-container {
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+}
+
+.move-list-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.move-list-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--space-4);
+  font-style: italic;
+}
+
+.move-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-1);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: var(--font-sm);
+  transition: all 150ms ease-out;
+  
+  &:hover {
+    background-color: var(--bg-hover);
+  }
+  
+  &.current {
+    background-color: var(--focus-ring);
+    color: white;
+    font-weight: 500;
+  }
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.move-number {
+  color: var(--text-muted);
+  font-weight: 500;
+  min-width: 24px;
+  
+  .current & {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.move-notation {
+  flex: 1;
+  font-weight: 500;
+}
+
+.move-quality {
+  font-weight: bold;
+  font-size: 0.9em;
+  
+  &.best {
+    color: var(--move-best);
+  }
+  
+  &.mistake {
+    color: var(--move-mistake);
+  }
+  
+  &.blunder {
+    color: var(--move-blunder);
+  }
+  
+  .current & {
+    color: white;
+  }
+}
+
+// Game Info Component Styles
+.game-info-component {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+
+  .game-info-header {
+    h3 {
+      margin: 0 0 var(--space-4) 0;
+      font-size: var(--font-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+}
+
+.game-metadata {
+  .no-game {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: var(--space-4);
+    text-align: center;
+  }
+
+  .players-section {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding: var(--space-4);
+    background: var(--bg-base);
+    border-radius: 6px;
+    border: 1px solid var(--border-default);
+
+    .vs-separator {
+      font-size: var(--font-sm);
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+  }
+
+  .player-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .player-details {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+
+      .player-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: var(--font-base);
+      }
+
+      .player-rating {
+        color: var(--text-secondary);
+        font-size: var(--font-sm);
+      }
+    }
+
+    .result-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-xs);
+      font-weight: 700;
+
+      &.winner {
+        background: var(--move-best);
+        color: white;
+      }
+
+      &.draw {
+        background: var(--text-muted);
+        color: white;
+      }
+
+      &.loser {
+        background: var(--move-mistake);
+        color: white;
+      }
+    }
+  }
+
+  .game-details {
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2) var(--space-4);
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-2) 0;
+
+      .detail-label {
+        color: var(--text-secondary);
+        font-size: var(--font-sm);
+        font-weight: 500;
+      }
+
+      .detail-value {
+        color: var(--text-primary);
+        font-size: var(--font-sm);
+        font-weight: 600;
+        text-align: right;
+      }
+    }
+  }
+
+  .analysis-status {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-default);
+
+    .analysis-badge {
+      background: rgba(5, 150, 105, 0.1);
+      color: var(--move-best);
+      padding: var(--space-2) var(--space-4);
+      border-radius: 4px;
+      font-size: var(--font-sm);
+      font-weight: 500;
+      display: inline-block;
+    }
+  }
+}
+
+.game-result-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  border-radius: 6px;
+  margin-top: var(--space-4);
+  border: 1px solid var(--border-default);
+
+  .result-text {
+    font-weight: 600;
+    font-size: var(--font-base);
+  }
+
+  .result-notation {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    font-weight: 700;
+    font-size: var(--font-lg);
+  }
+
+  &.white-win {
+    background: rgba(248, 250, 252, 0.5);
+    border-color: var(--board-light);
+    
+    .result-text, .result-notation {
+      color: var(--text-primary);
+    }
+  }
+
+  &.black-win {
+    background: rgba(51, 65, 85, 0.1);
+    border-color: var(--board-dark);
+    
+    .result-text, .result-notation {
+      color: var(--board-dark);
+    }
+  }
+
+  &.draw {
+    background: rgba(148, 163, 184, 0.1);
+    border-color: var(--text-muted);
+    
+    .result-text, .result-notation {
+      color: var(--text-muted);
+    }
+  }
+
+  &.ongoing {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    
+    .result-text, .result-notation {
+      color: #3b82f6;
+    }
+  }
+}
+
+// =============================================================================
+// Move Navigation Component Styles
+// =============================================================================
+
+.move-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+  background: var(--bg-surface);
+  border-radius: 8px;
+  padding: var(--space-4);
+  
+  .move-explanation {
+    min-height: 60px;
+    padding: var(--space-3);
+    background: var(--bg-panel);
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    font-size: var(--font-sm);
+    line-height: 1.6;
+    
+    strong {
+      color: var(--text-primary);
+      margin-right: var(--space-2);
+    }
+    
+    .move-good {
+      color: var(--move-best);
+    }
+    
+    .move-inaccuracy {
+      color: #f59e0b; // Amber
+    }
+    
+    .move-mistake,
+    .move-blunder {
+      color: var(--move-mistake);
+    }
+  }
+  
+  .navigation-controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    
+    button {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border-default);
+      background: var(--bg-panel);
+      color: var(--text-primary);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: var(--font-base);
+      transition: all 0.15s ease;
+      
+      &:hover:not(:disabled) {
+        background: var(--bg-hover);
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+  
+  .move-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    max-height: 200px;
+    
+    .move-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      width: calc(50% - var(--space-1) / 2);
+      
+      .move-number {
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: var(--font-sm);
+        min-width: 24px;
+      }
+      
+      .move {
+        padding: var(--space-1) var(--space-2);
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+        font-size: var(--font-sm);
+        font-weight: 500;
+        transition: all 0.15s ease;
+        flex: 1;
+        
+        &:hover {
+          background: var(--bg-hover);
+        }
+        
+        &.move-active {
+          background: var(--bg-active);
+          color: var(--text-primary);
+          font-weight: 600;
+          box-shadow: 0 0 0 2px var(--focus-ring);
+        }
+        
+        // Move quality colors
+        &.move-good {
+          color: var(--move-best);
+          background: rgba(5, 150, 105, 0.1);
+          
+          &:hover {
+            background: rgba(5, 150, 105, 0.2);
+          }
+        }
+        
+        &.move-inaccuracy {
+          color: #f59e0b;
+          background: rgba(245, 158, 11, 0.1);
+          
+          &:hover {
+            background: rgba(245, 158, 11, 0.2);
+          }
+        }
+        
+        &.move-mistake {
+          color: var(--move-mistake);
+          background: rgba(220, 38, 38, 0.1);
+          
+          &:hover {
+            background: rgba(220, 38, 38, 0.2);
+          }
+        }
+        
+        &.move-blunder {
+          color: var(--move-blunder);
+          background: rgba(153, 27, 27, 0.1);
+          font-weight: 600;
+          
+          &:hover {
+            background: rgba(153, 27, 27, 0.2);
+          }
+        }
+      }
+    }
+  }
+  
+  .game-statistics {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-subtle);
+    
+    .quality-bar {
+      position: relative;
+      height: 24px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      overflow: hidden;
+      
+      .quality-bar-fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        background: linear-gradient(90deg, var(--move-best) 0%, #10b981 100%);
+        transition: width 0.3s ease;
+      }
+      
+      .quality-percentage {
+        position: absolute;
+        right: var(--space-3);
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 600;
+        font-size: var(--font-sm);
+        color: var(--text-primary);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+    }
+    
+    .stats-breakdown {
+      display: flex;
+      justify-content: space-around;
+      font-size: var(--font-sm);
+      
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-1);
+        font-weight: 500;
+        
+        &.stat-best {
+          color: var(--move-best);
+        }
+        
+        &.stat-good {
+          color: #10b981;
+        }
+        
+        &.stat-inaccurate {
+          color: #f59e0b;
+        }
+        
+        &.stat-bad {
+          color: var(--move-mistake);
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// Sample Game Selector Styles
+// =============================================================================
+
+.sample-game-selector {
+  .selector-header {
+    text-align: center;
+    margin-bottom: var(--space-6);
+
+    h3 {
+      margin: 0 0 var(--space-2) 0;
+      font-size: var(--font-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: var(--font-sm);
+    }
+  }
+
+  .games-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .sample-game-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: var(--space-6);
+    transition: all 0.15s ease;
+
+    &:hover {
+      border-color: var(--text-secondary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-4);
+
+      .game-name {
+        margin: 0;
+        font-size: var(--font-base);
+        font-weight: 600;
+        color: var(--text-primary);
+        flex: 1;
+      }
+
+      .game-badges {
+        display: flex;
+        gap: var(--space-2);
+        flex-shrink: 0;
+        margin-left: var(--space-4);
+      }
+    }
+
+    .game-details {
+      margin-bottom: var(--space-6);
+
+      .game-players {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: var(--font-sm);
+        margin-bottom: var(--space-1);
+      }
+
+      .game-opening {
+        color: var(--text-secondary);
+        font-size: var(--font-xs);
+        font-weight: 500;
+        margin-bottom: var(--space-4);
+      }
+
+      .game-description {
+        color: var(--text-secondary);
+        font-size: var(--font-sm);
+        line-height: 1.5;
+        margin: 0;
+      }
+    }
+
+    .load-game-button {
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      background: var(--text-primary);
+      color: var(--bg-base);
+      border: none;
+      border-radius: 6px;
+      font-size: var(--font-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+
+  // Badges
+  .difficulty-badge, .theme-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: var(--font-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .difficulty-badge {
+    &.beginner {
+      background: rgba(34, 197, 94, 0.2);
+      color: #16a34a;
+    }
+
+    &.intermediate {
+      background: rgba(245, 158, 11, 0.2);
+      color: #d97706;
+    }
+
+    &.advanced {
+      background: rgba(239, 68, 68, 0.2);
+      color: #dc2626;
+    }
+
+    &.master {
+      background: rgba(147, 51, 234, 0.2);
+      color: #9333ea;
+    }
+  }
+
+  .theme-badge {
+    &.opening {
+      background: rgba(59, 130, 246, 0.2);
+      color: #2563eb;
+    }
+
+    &.tactical {
+      background: rgba(239, 68, 68, 0.2);
+      color: #dc2626;
+    }
+
+    &.endgame {
+      background: rgba(107, 114, 128, 0.2);
+      color: #6b7280;
+    }
+
+    &.positional {
+      background: rgba(34, 197, 94, 0.2);
+      color: #16a34a;
+    }
+  }
+
+  // Loading overlay
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    .loading-spinner {
+      background: var(--bg-base);
+      padding: var(--space-8);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+
+      .spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--border-default);
+        border-top: 3px solid var(--text-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      span {
+        color: var(--text-primary);
+        font-size: var(--font-sm);
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// =============================================================================
+// App Layout Styles
+// =============================================================================
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base);
+  color: var(--text-primary);
+
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-6);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-default);
+    flex-shrink: 0;
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+
+      h1 {
+        margin: 0;
+        font-size: var(--font-xl);
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .app-subtitle {
+        font-size: var(--font-sm);
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+    }
+
+    .app-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+
+      .theme-toggle {
+        background: none;
+        border: 1px solid var(--border-default);
+        border-radius: 6px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: var(--font-lg);
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: var(--bg-base);
+          border-color: var(--text-secondary);
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+    }
+  }
+
+  .app-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 360px;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+
+    .app-sidebar,
+    .app-aside {
+      overflow-y: auto;
+      border-right: 1px solid var(--border-default);
+    }
+
+    .app-aside {
+      border-right: none;
+      border-left: 1px solid var(--border-default);
+    }
+
+    .app-main {
+      overflow: hidden;
+      background: var(--bg-base);
+    }
+  }
+}
+
+// =============================================================================
+// No-scroll Layout Adjustments
+// =============================================================================
+
+// Ensure all panels fit on screen without scrolling
+.panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-content {
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+// Game analyzer specific adjustments - inherits from .panel class
+
+// Chess board sizing to fit available space
+.chess-board-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .chess-board {
+    // Size board based on available height
+    --board-size: min(100%, calc(100vh - 300px));
+    width: var(--board-size);
+    height: var(--board-size);
+    max-width: 600px;
+    max-height: 600px;
+  }
+}
+
+// Move list should not scroll
+.move-navigation {
+  .move-list {
+    max-height: 150px;
+    overflow-y: auto; // Only the move list can scroll if needed
+  }
+}
+
+// Sample game selector adjustments
+.sample-games-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sample-game-selector {
+  flex: 1;
+  overflow-y: auto; // Allow scrolling only in the games grid
+  
+  .games-grid {
+    gap: var(--space-3);
+  }
+}
+
+// AI Chat panel adjustments
+.ai-chat-panel {
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .messages-area {
+    flex: 1;
+    overflow-y: auto; // Only messages can scroll
+    min-height: 0;
+  }
+  
+  .chat-input-area {
+    flex-shrink: 0;
+  }
+}
+
+// =============================================================================
+// Responsive Breakpoints
+// =============================================================================
+
+@media (max-width: $breakpoint-wide) {
+  .app .app-layout {
+    grid-template-columns: 280px 1fr 320px;
+  }
+}
+
+@media (max-width: $breakpoint-standard) {
+  .app .app-layout {
+    grid-template-columns: 260px 1fr 300px;
+  }
+}
+
+@media (max-width: $breakpoint-compact) {
+  .app .app-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+
+    .app-sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border-default);
+      max-height: 200px;
+    }
+
+    .app-aside {
+      border-left: none;
+      border-top: 1px solid var(--border-default);
+      max-height: 300px;
+    }
+  }
+
+  .app .app-header {
+    padding: var(--space-4);
+
+    .app-title {
+      gap: var(--space-2);
+
+      h1 {
+        font-size: var(--font-lg);
+      }
+
+      .app-subtitle {
+        display: none;
+      }
+    }
+  }
+  
+
+  
+  .move-navigation {
+    .move-list {
+      max-height: 150px;
+    }
+  }
+  
+  .sample-game-selector {
+    .sample-game-card {
+      padding: var(--space-4);
+
+      .game-header {
+        flex-direction: column;
+        gap: var(--space-2);
+
+        .game-badges {
+          margin-left: 0;
+          align-self: flex-start;
+        }
+      }
+    }
+  }
+  
+  .game-metadata {
+    .players-section {
+      flex-direction: column;
+      gap: var(--space-2);
+
+      .vs-separator {
+        display: none;
+      }
+    }
+
+    .game-details .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .game-result-display {
+    flex-direction: column;
+    gap: var(--space-2);
+    text-align: center;
+  }
+} 

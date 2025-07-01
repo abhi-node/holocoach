@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data:;
+    connect-src 'self';
+  ">
+  <title>HoloCoach - AI Chess Coach</title>
+  
+  <!-- Prevent zooming -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  
+  <!-- Preload critical fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <div id="root"></div>
+
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Basic reset styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    #root {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+
+  <!-- Fix dragEvent error before any other script runs -->
+  <script>
+    // Very first thing: define dragEvent globally
+    window.dragEvent = window.dragEvent || {};
+    var dragEvent = window.dragEvent;
+    console.log('[HTML] Defined dragEvent globally');
+    
+    // Catch unhandled promise rejections too
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('[HTML] Unhandled promise rejection:', event.reason);
+      if (event.reason && event.reason.message && event.reason.message.includes('dragEvent')) {
+        event.preventDefault();
+      }
+    });
+    
+    // Catch all errors with detailed logging
+    window.addEventListener('error', function(event) {
+      console.error('[HTML] Global error caught:', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+      });
+      
+      if (event.message && event.message.includes('dragEvent is not defined')) {
+        console.warn('[HTML] Suppressing dragEvent error');
+        event.preventDefault();
+        return false;
+      }
+    }, true);
+    
+    // Override eval to catch dynamic code errors
+    var originalEval = window.eval;
+    window.eval = function(code) {
+      try {
+        return originalEval.call(window, code);
+      } catch (e) {
+        if (e.message && e.message.includes('dragEvent')) {
+          console.error('[HTML] Caught dragEvent error in eval:', e);
+          return undefined;
+        }
+        throw e;
+      }
+    };
+  </script>
+
+  <script type="module" src="/src/renderer/index.tsx"></script>
+</body>
+</html> 
