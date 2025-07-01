@@ -1786,9 +1786,37 @@ body {
         font-size: 0.75rem;
         color: var(--text-secondary);
         margin-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        
+        .player {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          min-width: 0; // Allow text truncation
+          
+          .player-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+          }
+          
+          .player-rating {
+            font-size: 0.625rem;
+            color: var(--text-muted);
+            opacity: 0.8;
+          }
+        }
+        
+        .vs-divider {
+          flex-shrink: 0;
+          font-size: 0.625rem;
+          color: var(--text-muted);
+          opacity: 0.6;
+        }
       }
       
       .game-info {
@@ -1912,6 +1940,20 @@ body {
         
         .game-players {
           font-size: 0.7rem;
+          
+          .player {
+            .player-name {
+              font-size: 0.7rem;
+            }
+            
+            .player-rating {
+              font-size: 0.6rem;
+            }
+          }
+          
+          .vs-divider {
+            font-size: 0.6rem;
+          }
         }
         
         .game-info {

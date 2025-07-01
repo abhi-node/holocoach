@@ -53,7 +53,19 @@ export function SampleGameSelector(): JSX.Element {
             <div className="game-details">
               <h3 className="game-title">{game.metadata.opening || 'Chess Game'}</h3>
               <div className="game-players">
-                {game.metadata.white.name} vs {game.metadata.black.name}
+                <div className="player white-player">
+                  <span className="player-name">{game.metadata.white.name}</span>
+                  {game.metadata.white.rating && (
+                    <span className="player-rating">{game.metadata.white.rating}</span>
+                  )}
+                </div>
+                <span className="vs-divider">vs</span>
+                <div className="player black-player">
+                  <span className="player-name">{game.metadata.black.name}</span>
+                  {game.metadata.black.rating && (
+                    <span className="player-rating">{game.metadata.black.rating}</span>
+                  )}
+                </div>
               </div>
               <div className="game-info">
                 <span>{game.moves.length} moves</span>
