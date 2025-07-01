@@ -1564,217 +1564,6 @@ body {
 }
 
 // =============================================================================
-// Sample Game Selector Styles
-// =============================================================================
-
-.sample-game-selector {
-  .selector-header {
-    text-align: center;
-    margin-bottom: var(--space-6);
-
-    h3 {
-      margin: 0 0 var(--space-2) 0;
-      font-size: var(--font-lg);
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    p {
-      margin: 0;
-      color: var(--text-secondary);
-      font-size: var(--font-sm);
-    }
-  }
-
-  .games-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  .sample-game-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    border-radius: 8px;
-    padding: var(--space-6);
-    transition: all 0.15s ease;
-
-    &:hover {
-      border-color: var(--text-secondary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .game-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: var(--space-4);
-
-      .game-name {
-        margin: 0;
-        font-size: var(--font-base);
-        font-weight: 600;
-        color: var(--text-primary);
-        flex: 1;
-      }
-
-      .game-badges {
-        display: flex;
-        gap: var(--space-2);
-        flex-shrink: 0;
-        margin-left: var(--space-4);
-      }
-    }
-
-    .game-details {
-      margin-bottom: var(--space-6);
-
-      .game-players {
-        font-weight: 600;
-        color: var(--text-primary);
-        font-size: var(--font-sm);
-        margin-bottom: var(--space-1);
-      }
-
-      .game-opening {
-        color: var(--text-secondary);
-        font-size: var(--font-xs);
-        font-weight: 500;
-        margin-bottom: var(--space-4);
-      }
-
-      .game-description {
-        color: var(--text-secondary);
-        font-size: var(--font-sm);
-        line-height: 1.5;
-        margin: 0;
-      }
-    }
-
-    .load-game-button {
-      width: 100%;
-      padding: var(--space-3) var(--space-4);
-      background: var(--text-primary);
-      color: var(--bg-base);
-      border: none;
-      border-radius: 6px;
-      font-size: var(--font-sm);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-
-      &:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
-    }
-  }
-
-  // Badges
-  .difficulty-badge, .theme-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: var(--font-xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .difficulty-badge {
-    &.beginner {
-      background: rgba(34, 197, 94, 0.2);
-      color: #16a34a;
-    }
-
-    &.intermediate {
-      background: rgba(245, 158, 11, 0.2);
-      color: #d97706;
-    }
-
-    &.advanced {
-      background: rgba(239, 68, 68, 0.2);
-      color: #dc2626;
-    }
-
-    &.master {
-      background: rgba(147, 51, 234, 0.2);
-      color: #9333ea;
-    }
-  }
-
-  .theme-badge {
-    &.opening {
-      background: rgba(59, 130, 246, 0.2);
-      color: #2563eb;
-    }
-
-    &.tactical {
-      background: rgba(239, 68, 68, 0.2);
-      color: #dc2626;
-    }
-
-    &.endgame {
-      background: rgba(107, 114, 128, 0.2);
-      color: #6b7280;
-    }
-
-    &.positional {
-      background: rgba(34, 197, 94, 0.2);
-      color: #16a34a;
-    }
-  }
-
-  // Loading overlay
-  .loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-
-    .loading-spinner {
-      background: var(--bg-base);
-      padding: var(--space-8);
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-4);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-
-      .spinner {
-        width: 32px;
-        height: 32px;
-        border: 3px solid var(--border-default);
-        border-top: 3px solid var(--text-primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-
-      span {
-        color: var(--text-primary);
-        font-size: var(--font-sm);
-        font-weight: 500;
-      }
-    }
-  }
-}
-
-// =============================================================================
 // App Layout Styles
 // =============================================================================
 
@@ -1915,7 +1704,10 @@ body {
   }
 }
 
-// Sample game selector adjustments
+// =============================================================================
+// Sample Game Selector Styles
+// =============================================================================
+
 .sample-games-container {
   flex: 1;
   overflow: hidden;
@@ -1925,30 +1717,119 @@ body {
 
 .sample-game-selector {
   flex: 1;
-  overflow-y: auto; // Allow scrolling only in the games grid
+  overflow-y: auto;
+  padding: 16px;
   
-  .games-grid {
-    gap: var(--space-3);
+  .error-message {
+    padding: 12px;
+    margin-bottom: 16px;
+    background: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: 4px;
+    font-size: 0.875rem;
   }
-}
-
-// AI Chat panel adjustments
-.ai-chat-panel {
-  .chat-container {
-    flex: 1;
+  
+  .sample-games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  
+  .sample-game-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    gap: 16px;
+    align-items: flex-start;
+    
+    &:hover {
+      border-color: var(--text-secondary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    .game-icon {
+      font-size: 2rem;
+      opacity: 0.6;
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .game-details {
+      flex: 1;
+      min-width: 0; // Allow text truncation
+      
+      .game-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 4px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .game-players {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .game-info {
+        display: flex;
+        gap: 12px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        
+        span {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          
+          &:last-child {
+            font-weight: 600;
+          }
+        }
+      }
+    }
   }
   
-  .messages-area {
-    flex: 1;
-    overflow-y: auto; // Only messages can scroll
-    min-height: 0;
-  }
-  
-  .chat-input-area {
-    flex-shrink: 0;
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
   }
 }
 
@@ -2011,16 +1892,31 @@ body {
   }
   
   .sample-game-selector {
+    .sample-games-grid {
+      grid-template-columns: 1fr; // Single column on mobile
+    }
+    
     .sample-game-card {
-      padding: var(--space-4);
-
-      .game-header {
-        flex-direction: column;
-        gap: var(--space-2);
-
-        .game-badges {
-          margin-left: 0;
-          align-self: flex-start;
+      padding: 12px;
+      
+      .game-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 1.5rem;
+      }
+      
+      .game-details {
+        .game-title {
+          font-size: 0.8125rem;
+        }
+        
+        .game-players {
+          font-size: 0.7rem;
+        }
+        
+        .game-info {
+          font-size: 0.7rem;
+          gap: 8px;
         }
       }
     }
