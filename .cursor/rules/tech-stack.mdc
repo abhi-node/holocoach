@@ -1,0 +1,82 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# HoloCoach Tech Stack Rules
+
+## Electron + React Security
+```typescript
+// Always use context isolation
+webPreferences: {
+  contextIsolation: true,
+  nodeIntegration: false,
+  preload: path.join(__dirname, 'preload.js')
+}
+
+// Expose limited APIs via preload
+contextBridge.exposeInMainWorld('chessAPI', {
+  syncGames: () => ipcRenderer.invoke('sync-games'),
+  analyzeGame: (pgn) => ipcRenderer.invoke('analyze-game', pgn),
+});
+```
+
+## LangGraph Workflows
+- **State Interface**: Define clear state types with status field
+- **Error Handling**: Include retry logic for rate limits
+- **Node Pattern**: Pure functions that return state updates
+- **No Persistence**: State is memory-bound, save to DB separately
+
+## Stockfish Integration
+- **WASM Only**: Use stockfish.wasm for browser compatibility
+- **Pooling**: Max 4 instances, reuse when possible
+- **Memory**: ~50MB per instance, dispose when unused
+- **Configuration**: Set threads=4, hash=128MB on init
+
+## GPT-4o Mini
+- **Rate Limits**: 60 req/min, implement exponential backoff
+- **Caching**: Cache responses by move position hash
+- **Token Limits**: ~100k daily budget, estimate before calling
+- **Prompt Design**: System prompt + concise context (140 char max responses)
+
+## SQLite Database
+```sql
+-- Use WAL mode for better concurrency
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+PRAGMA cache_size = -64000; -- 64MB cache
+
+-- Always use transactions for bulk operations
+BEGIN TRANSACTION;
+-- multiple inserts
+COMMIT;
+```
+
+## Chess Platform APIs
+- **Rate Limiting**: Chess.com: 30/min, Lichess: 120/min
+- **Retry Strategy**: Exponential backoff for rate limit errors
+- **Data Validation**: Sanitize usernames, validate PGN size (<100KB)
+- **Polling**: No webhooks available, poll recent games only
+
+## State Management (Zustand)
+```typescript
+const useGameStore = create<GameState>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        // state
+        addGames: (games) => set((state) => ({
+          games: [...state.games, ...games].slice(-50) // Keep last 50
+        })),
+      }),
+      { name: 'game-storage' }
+    )
+  )
+);
+```
+
+## Performance Guidelines
+- **Memory**: Monitor Stockfish instances (~50MB each)
+- **Rendering**: Virtualize game lists, memoize chess board
+- **API Calls**: Batch when possible, cache responses
+- **Database**: Use prepared statements, transactions for bulk ops 

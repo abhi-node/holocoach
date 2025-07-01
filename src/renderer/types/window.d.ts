@@ -1,44 +1,37 @@
 /**
- * @fileoverview Type declarations for window object and global interfaces
+ * @fileoverview Window Type Definitions
  * @module renderer/types/window
  * 
- * TypeScript declarations for Electron preload APIs and global window extensions.
- * Provides type safety for IPC communication between main and renderer processes.
+ * Extends the Window interface to include APIs exposed by the preload script.
+ * This provides TypeScript intellisense for the exposed APIs.
  */
 
 /// <reference types="vite/client" />
 
+import { HoloCoachAPI } from '../../preload';
+
 declare global {
   interface Window {
-    // Electron preload APIs
+    /**
+     * Chess-related APIs
+     */
     chessAPI: {
-      // Game analysis
-      analyzeGame: (pgn: string) => Promise<any>;
-      analyzePosition: (fen: string) => Promise<any>;
-      
-      // Database operations  
-      saveGame: (game: any) => Promise<void>;
-      loadGames: () => Promise<any[]>;
-      
-      // External API calls
-      syncChesscomGames: (username: string) => Promise<any>;
-      syncLichessGames: (username: string) => Promise<any>;
-      
-      // Utility functions
-      validatePGN: (pgn: string) => Promise<boolean>;
-      
-      // Settings
-      getSettings: () => Promise<any>;
-      saveSettings: (settings: any) => Promise<void>;
+      loadPGN: (pgn: string) => Promise<boolean>;
+      getGameInfo: () => Promise<any>;
     };
-
-    // Electron system APIs
+    
+    /**
+     * Electron utility APIs
+     */
     electronAPI: {
-      minimize: () => void;
-      maximize: () => void;
-      close: () => void;
-      openExternal: (url: string) => void;
+      getVersion: () => string;
+      getPlatform: () => string;
     };
+    
+    /**
+     * HoloCoach main API
+     */
+    holoCoach: HoloCoachAPI;
   }
 
   // Vite environment variables

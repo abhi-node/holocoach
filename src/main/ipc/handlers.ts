@@ -8,7 +8,12 @@
  * @requires electron
  */
 
-import { ipcMain } from 'electron';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { GameFetcherService, GameFetchProgress } from '../services/GameFetcherService';
+import { ChessGame } from '../../shared/types/chess';
+
+// Service instances
+const gameFetcherService = new GameFetcherService();
 
 /**
  * Sets up all IPC handlers for the application
@@ -31,6 +36,9 @@ export function setupIpcHandlers(): void {
   
   // Database handlers
   ipcMain.handle('init-database', handleInitDatabase);
+  
+  // Game fetching handlers
+  registerGameFetchHandlers();
   
   console.log('[IPC] All handlers registered');
 }
@@ -232,4 +240,67 @@ async function handleInitDatabase(_event: Electron.IpcMainInvokeEvent): Promise<
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
+}
+
+/**
+ * Registers game fetching related IPC handlers
+ */
+function registerGameFetchHandlers(): void {
+  /**
+   * Fetches games from chess platforms
+   */
+  ipcMain.handle('fetch-games', async (
+    event: IpcMainInvokeEvent,
+    username: string,
+    platform: 'chess.com' | 'lichess',
+    limit = 10
+  ): Promise<ChessGame[]> => {
+    try {
+      // Send progress updates to the renderer
+      const games = await gameFetcherService.fetchGames(
+        username,
+        platform,
+        limit,
+        (progress: GameFetchProgress) => {
+          // Send progress updates via a separate channel
+          event.sender.send('fetch-games-progress', progress);
+        }
+      );
+      
+      return games;
+    } catch (error) {
+      console.error('Error fetching games:', error);
+      throw error;
+    }
+  });
+  
+  /**
+   * Validates a username on a platform
+   */
+  ipcMain.handle('validate-user', async (
+    _event: IpcMainInvokeEvent,
+    username: string,
+    platform: 'chess.com' | 'lichess'
+  ): Promise<boolean> => {
+    try {
+      const chessComClient = new (await import('../../api/chess-com/ChessComClient')).ChessComClient();
+      const lichessClient = new (await import('../../api/lichess/LichessClient')).LichessClient();
+      
+      if (platform === 'chess.com') {
+        return await chessComClient.validateUser(username);
+      } else {
+        return await lichessClient.validateUser(username);
+      }
+    } catch (error) {
+      console.error('Error validating user:', error);
+      return false;
+    }
+  });
+  
+  /**
+   * Gets rate limiter status
+   */
+  ipcMain.handle('get-rate-limiter-status', async (): Promise<any> => {
+    return gameFetcherService.getRateLimiterStatus();
+  });
 } 

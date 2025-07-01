@@ -87,7 +87,7 @@ export abstract class BaseAPIClient {
       });
       
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as T;
         return {
           success: true,
           data,
@@ -99,9 +99,9 @@ export abstract class BaseAPIClient {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         
         try {
-          const errorData = await response.json();
+          const errorData = await response.json() as { message?: string; error?: string };
           if (errorData.message || errorData.error) {
-            errorMessage = errorData.message || errorData.error;
+            errorMessage = errorData.message || errorData.error || errorMessage;
           }
         } catch {
           // Response body is not JSON

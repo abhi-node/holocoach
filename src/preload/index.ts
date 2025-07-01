@@ -9,6 +9,8 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+import { ChessGame } from '../shared/types/chess';
+import { GameFetchProgress } from '../main/services/GameFetcherService';
 
 /**
  * Chess API exposed to renderer process
@@ -69,6 +71,59 @@ const electronAPI = {
  */
 contextBridge.exposeInMainWorld('chessAPI', chessAPI);
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
+
+// Define the shape of the exposed API
+export interface HoloCoachAPI {
+  // Environment
+  isDev: boolean;
+  platform: NodeJS.Platform;
+  
+  // Database operations
+  database: {
+    init: () => Promise<{ success: boolean; error?: string }>;
+  };
+  
+  // Game fetching operations
+  games: {
+    fetchGames: (username: string, platform: 'chess.com' | 'lichess', limit?: number) => Promise<ChessGame[]>;
+    validateUser: (username: string, platform: 'chess.com' | 'lichess') => Promise<boolean>;
+    getRateLimiterStatus: () => Promise<any>;
+    onFetchProgress: (callback: (progress: GameFetchProgress) => void) => void;
+    offFetchProgress: () => void;
+  };
+}
+
+// Create the API object
+const holoCoachAPI: HoloCoachAPI = {
+  isDev: process.env.NODE_ENV === 'development',
+  platform: process.platform,
+  
+  database: {
+    init: () => ipcRenderer.invoke('init-database')
+  },
+  
+  games: {
+    fetchGames: (username: string, platform: 'chess.com' | 'lichess', limit?: number) => 
+      ipcRenderer.invoke('fetch-games', username, platform, limit),
+      
+    validateUser: (username: string, platform: 'chess.com' | 'lichess') =>
+      ipcRenderer.invoke('validate-user', username, platform),
+      
+    getRateLimiterStatus: () =>
+      ipcRenderer.invoke('get-rate-limiter-status'),
+      
+    onFetchProgress: (callback: (progress: GameFetchProgress) => void) => {
+      ipcRenderer.on('fetch-games-progress', (_event, progress) => callback(progress));
+    },
+    
+    offFetchProgress: () => {
+      ipcRenderer.removeAllListeners('fetch-games-progress');
+    }
+  }
+};
+
+// Expose the API to the renderer process
+contextBridge.exposeInMainWorld('holoCoach', holoCoachAPI);
 
 // Log successful preload initialization
 console.log('[Preload] APIs exposed successfully'); 

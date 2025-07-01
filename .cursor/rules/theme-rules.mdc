@@ -1,0 +1,101 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# HoloCoach Theme Rules
+
+## Design Philosophy
+- **Minimalist**: Remove all non-essential visual elements
+- **Content First**: Chess analysis is the primary focus
+- **Consistent**: Predictable patterns reduce cognitive load
+- **Functional**: Every visual element serves a purpose
+
+## Color System
+```scss
+// Light Mode
+--bg-base: #FFFFFF;
+--bg-surface: #F8FAFC;
+--text-primary: #334155;
+--text-secondary: #475569;
+--text-muted: #64748B;
+--border-default: #CBD5E1;
+
+// Dark Mode  
+--bg-base: #000000;
+--bg-surface: #0A0A0A;
+--text-primary: #F8FAFC;
+--text-secondary: #E2E8F0;
+--text-muted: #94A3B8;
+--border-default: #334155;
+
+// Chess Colors (consistent across themes)
+--board-light: #F0D9B5;
+--board-dark: #B58863;
+--move-best: #059669;
+--move-mistake: #DC2626;
+--move-blunder: #991B1B;
+```
+
+## Typography
+```scss
+// System fonts for native feel
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+// Type Scale (minimal)
+--font-xs: 0.75rem;    // Metadata
+--font-sm: 0.875rem;   // Secondary content  
+--font-base: 1rem;     // Body text
+--font-lg: 1.125rem;   // Subheadings
+--font-xl: 1.25rem;    // Panel titles
+
+// Chess notation
+font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+font-variant-numeric: tabular-nums;
+```
+
+## Spacing (8px Grid)
+```scss
+--space-1: 0.25rem;  // 4px
+--space-2: 0.5rem;   // 8px - Base unit
+--space-4: 1rem;     // 16px  
+--space-6: 1.5rem;   // 24px - Panel padding
+--space-8: 2rem;     // 32px
+```
+
+## Component Patterns
+```scss
+// Buttons - minimal style
+.button-primary {
+  background: var(--text-primary);
+  color: var(--bg-base);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+// Cards - subtle elevation
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+// Move quality indicators
+.move-best { color: var(--move-best); }
+.move-mistake { color: var(--move-mistake); }
+```
+
+## Animation Rules
+- **Minimal**: Only animate when it aids understanding
+- **Duration**: 150-200ms max
+- **Properties**: opacity, transform, background-color only
+- **Respect**: `prefers-reduced-motion`
+
+## Accessibility
+- **Contrast**: 4.5:1 minimum for text
+- **Focus**: 2px outline with 2px offset  
+- **Touch Targets**: 44x44px minimum
+- **Screen Reader**: Proper ARIA labels for chess moves

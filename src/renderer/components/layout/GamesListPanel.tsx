@@ -19,10 +19,11 @@ import { ChessGame } from '../../../shared/types/chess';
  * Games List Panel - Left panel of the application
  */
 export const GamesListPanel: React.FC = () => {
-  const { games, currentGame, loadGame } = useChessStore();
+  const { games, currentGame, loadGame, addGames } = useChessStore();
   const [syncError, setSyncError] = useState<string>('');
   const [syncSuccess, setSyncSuccess] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<string>('');
   
   /**
    * Handles game sync request
@@ -30,25 +31,42 @@ export const GamesListPanel: React.FC = () => {
   const handleSync = async (username: string, platform: 'chess.com' | 'lichess') => {
     setSyncError('');
     setSyncSuccess('');
+    setSyncProgress('');
     setIsSyncing(true);
     
     try {
-      // TODO: Implement actual API sync
-      console.log(`Syncing games for ${username} from ${platform}`);
+      // Set up progress listener
+      window.holoCoach.games.onFetchProgress((progress) => {
+        setSyncProgress(progress.message);
+        
+        if (progress.stage === 'error' && progress.error) {
+          setSyncError(progress.error);
+          setIsSyncing(false);
+        }
+      });
       
-      // For now, just show a message
-      setTimeout(() => {
-        setSyncSuccess(`API integration coming soon! For now, loading sample games...`);
+      // Fetch games from the API
+      const fetchedGames = await window.holoCoach.games.fetchGames(username, platform, 10);
+      
+      if (fetchedGames.length > 0) {
+        // Add games to the store
+        addGames(fetchedGames);
+        setSyncSuccess(`Successfully synced ${fetchedGames.length} games from ${platform}`);
         
-        // Load sample games for demonstration
-        const sampleGames = getSampleGames();
-        sampleGames.forEach(game => loadGame(game));
-        
-        setIsSyncing(false);
-      }, 1500);
+        // Auto-select the first game if no game is currently selected
+        if (!currentGame && fetchedGames.length > 0) {
+          loadGame(fetchedGames[0]);
+        }
+      } else {
+        setSyncError('No games found for this user');
+      }
     } catch (error) {
       setSyncError(error instanceof Error ? error.message : 'Failed to sync games');
+    } finally {
       setIsSyncing(false);
+      setSyncProgress('');
+      // Clean up progress listener
+      window.holoCoach.games.offFetchProgress();
     }
   };
   
@@ -57,8 +75,13 @@ export const GamesListPanel: React.FC = () => {
    */
   const loadSampleGames = () => {
     const sampleGames = getSampleGames();
-    sampleGames.forEach(game => loadGame(game));
+    addGames(sampleGames);
     setSyncSuccess(`Loaded ${sampleGames.length} sample games`);
+    
+    // Auto-select the first game if no game is currently selected
+    if (!currentGame && sampleGames.length > 0) {
+      loadGame(sampleGames[0]);
+    }
   };
   
   return (
@@ -74,6 +97,12 @@ export const GamesListPanel: React.FC = () => {
           error={syncError}
           success={syncSuccess}
         />
+        
+        {syncProgress && isSyncing && (
+          <div className="sync-progress">
+            {syncProgress}
+          </div>
+        )}
         
         <div className="sample-games-section">
           <div className="divider">

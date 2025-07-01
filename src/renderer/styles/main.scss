@@ -343,9 +343,8 @@ body {
   }
   
   .sync-section {
-    padding: 20px;
+    padding: 16px;
     border-bottom: 1px solid var(--border-default);
-    flex-shrink: 0;
     
     .sample-games-section {
       margin-top: 16px;
@@ -356,10 +355,10 @@ body {
         position: relative;
         
         span {
-          background: var(--bg-base);
+          background: var(--bg-surface);
           padding: 0 12px;
           color: var(--text-muted);
-          font-size: 0.75rem;
+          font-size: 12px;
           position: relative;
           z-index: 1;
         }
@@ -378,17 +377,17 @@ body {
       .sample-games-button {
         width: 100%;
         padding: 8px 16px;
-        background: transparent;
+        background: var(--bg-surface);
         border: 1px solid var(--border-default);
         border-radius: 4px;
-        color: var(--text-secondary);
-        font-size: 0.875rem;
+        color: var(--text-primary);
+        font-size: 14px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 150ms ease;
         
         &:hover:not(:disabled) {
-          background: var(--bg-surface);
-          border-color: var(--text-muted);
+          background: var(--bg-hover);
+          border-color: var(--border-hover);
         }
         
         &:disabled {
@@ -396,6 +395,17 @@ body {
           cursor: not-allowed;
         }
       }
+    }
+    
+    .sync-progress {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      animation: pulse 1.5s ease-in-out infinite;
     }
   }
   
@@ -971,13 +981,14 @@ body {
 // =============================================================================
 
 @keyframes pulse {
-  0%, 80%, 100% {
-    opacity: 0.3;
-    transform: scale(0.8);
+  0% {
+    opacity: 0.8;
   }
-  40% {
+  50% {
     opacity: 1;
-    transform: scale(1);
+  }
+  100% {
+    opacity: 0.8;
   }
 }
 

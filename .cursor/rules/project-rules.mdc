@@ -1,0 +1,65 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# HoloCoach Project Rules
+
+## Core Principles
+- **AI-First Code**: Self-documenting, context-rich files with predictable patterns
+- **File Size Limit**: Maximum 500 lines per file, target 200-300 lines
+- **Single Responsibility**: Each file/function has one clear purpose
+- **No Classes**: Use functional programming patterns
+
+## File Structure & Naming
+```
+src/
+├── main/           # Electron main process
+├── renderer/       # React app (components/, hooks/, stores/, etc.)
+├── shared/         # Types, constants, utilities
+├── langgraph/      # Workflow definitions
+├── chess/          # Chess logic (engine/, parser/, analysis/)
+└── api/           # External integrations
+```
+
+**Naming Conventions:**
+- Components: `ChessBoardComponent.tsx`
+- Hooks: `useGameAnalysis.ts`
+- Services: `DatabaseManager.ts`
+- Types: `GameAnalysisTypes.ts`
+- Constants: `CHESS_CONSTANTS.ts`
+
+## Code Standards
+- **File Header**: Every file needs `@fileoverview` with purpose and dependencies
+- **Function Docs**: JSDoc for all exported functions with params/returns/throws
+- **Named Exports**: Avoid default exports except for React components
+- **Error Handling**: Throw errors, don't use fallback values
+- **Descriptive Names**: Use auxiliary verbs (isLoading, hasError)
+
+## Component Structure (React)
+```typescript
+// 1. Imports (grouped)
+// 2. Constants
+// 3. Types/Interfaces
+// 4. Component definition
+// 5. State declarations
+// 6. Hooks
+// 7. Effects
+// 8. Handlers
+// 9. Render helpers
+// 10. Main render
+```
+
+## State Management
+- **Zustand**: Primary state management with devtools and persist
+- **Group Actions**: By feature area in stores
+- **Atomic Updates**: Single responsibility per action
+
+## Performance Rules
+- **Memoization**: React.memo for expensive components
+- **Lazy Loading**: Code split heavy components
+- **Virtualization**: For long lists (games)
+
+## Git Workflow
+- **Branch Names**: `feature/add-chess-board`, `fix/memory-leak`
+- **Commits**: `type(scope): subject` format 
