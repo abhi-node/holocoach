@@ -220,22 +220,13 @@ export function ChessBoardComponent(): JSX.Element {
   }, [endDrag]);
 
   return (
-    <div className="chess-board-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%' }}>
+    <div className="chess-board-container">
       {/* Flip board button positioned above */}
-      <div className="chess-board-header" style={{ marginBottom: '8px' }}>
+      <div className="chess-board-header">
         <button 
           className="flip-board-button"
           onClick={flipBoard}
           title="Flip board"
-          style={{
-            background: 'none',
-            border: '1px solid var(--border-default)',
-            borderRadius: '4px',
-            padding: '4px 8px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            color: 'var(--text-secondary)'
-          }}
         >
           ⟲ Flip Board
         </button>

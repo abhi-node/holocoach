@@ -11,6 +11,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { ChessGame } from '../shared/types/chess';
 import { GameFetchProgress } from '../main/services/GameFetcherService';
+import { StockfishAnalysis } from '../main/services/NativeStockfishService';
 
 /**
  * Chess API exposed to renderer process
@@ -91,6 +92,16 @@ export interface HoloCoachAPI {
     onFetchProgress: (callback: (progress: GameFetchProgress) => void) => void;
     offFetchProgress: () => void;
   };
+  
+  // Native Stockfish operations
+  stockfish: {
+    initialize: () => Promise<{ success: boolean; error?: string }>;
+    analyze: (fen: string, depth: number) => Promise<StockfishAnalysis | null>;
+    analyzeGame: (game: { moves: Array<{ from: string; to: string; promotion?: string }> }) => Promise<Record<string, StockfishAnalysis> | null>;
+    destroy: () => Promise<void>;
+    onProgress: (callback: (progress: { analyzed: number; total: number }) => void) => void;
+    offProgress: () => void;
+  };
 }
 
 // Create the API object
@@ -118,6 +129,26 @@ const holoCoachAPI: HoloCoachAPI = {
     
     offFetchProgress: () => {
       ipcRenderer.removeAllListeners('fetch-games-progress');
+    }
+  },
+  
+  stockfish: {
+    initialize: () => ipcRenderer.invoke('stockfish-initialize'),
+    
+    analyze: (fen: string, depth: number) => 
+      ipcRenderer.invoke('stockfish-analyze', fen, depth),
+      
+    analyzeGame: (game: { moves: Array<{ from: string; to: string; promotion?: string }> }) =>
+      ipcRenderer.invoke('stockfish-analyze-game', game),
+      
+    destroy: () => ipcRenderer.invoke('stockfish-destroy'),
+    
+    onProgress: (callback: (progress: { analyzed: number; total: number }) => void) => {
+      ipcRenderer.on('stockfish-progress', (_event, progress) => callback(progress));
+    },
+    
+    offProgress: () => {
+      ipcRenderer.removeAllListeners('stockfish-progress');
     }
   }
 };

@@ -11,6 +11,7 @@ dist/
 dist-electron/
 out/
 build/
+release/
 
 # Development
 .vscode/
@@ -80,6 +81,10 @@ coverage/
 # Stockfish binaries (if downloaded separately)
 stockfish*
 !src/chess/engine/stockfish*
+!src/main/binaries/mac/stockfish
+# Stockfish files in public (copied from node_modules)
+public/stockfish.js
+public/stockfish.wasm
 
 # API Keys and Secrets
 *.pem
@@ -88,4 +93,7 @@ stockfish*
 
 # User-specific files
 holocoach-settings.json
-user-preferences.json 
+user-preferences.json
+
+# misc
+.DS_Store 

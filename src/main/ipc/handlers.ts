@@ -11,9 +11,11 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { GameFetcherService, GameFetchProgress } from '../services/GameFetcherService';
 import { ChessGame } from '../../shared/types/chess';
+import { NativeStockfishService, StockfishAnalysis } from '../services/NativeStockfishService';
 
 // Service instances
 const gameFetcherService = new GameFetcherService();
+let nativeStockfish: NativeStockfishService | null = null;
 
 /**
  * Sets up all IPC handlers for the application
@@ -29,6 +31,12 @@ export function setupIpcHandlers(): void {
   // Analysis handlers
   ipcMain.handle('analyze-game', handleAnalyzeGame);
   ipcMain.handle('get-analysis', handleGetAnalysis);
+  
+  // Native Stockfish handlers
+  ipcMain.handle('stockfish-initialize', handleStockfishInitialize);
+  ipcMain.handle('stockfish-analyze', handleStockfishAnalyze);
+  ipcMain.handle('stockfish-analyze-game', handleStockfishAnalyzeGame);
+  ipcMain.handle('stockfish-destroy', handleStockfishDestroy);
   
   // Settings handlers
   ipcMain.handle('get-settings', handleGetSettings);
@@ -303,4 +311,173 @@ function registerGameFetchHandlers(): void {
   ipcMain.handle('get-rate-limiter-status', async (): Promise<any> => {
     return gameFetcherService.getRateLimiterStatus();
   });
+}
+
+/**
+ * Initializes native Stockfish engine
+ */
+async function handleStockfishInitialize(): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!nativeStockfish) {
+      nativeStockfish = new NativeStockfishService();
+      await nativeStockfish.initialize();
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('[IPC] Error initializing native Stockfish:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+/**
+ * Analyzes a single position with native Stockfish
+ */
+async function handleStockfishAnalyze(
+  _event: IpcMainInvokeEvent,
+  fen: string,
+  depth: number
+): Promise<StockfishAnalysis | null> {
+  try {
+    if (!nativeStockfish) {
+      throw new Error('Native Stockfish not initialized');
+    }
+    return await nativeStockfish.analyze(fen, depth);
+  } catch (error) {
+    console.error('[IPC] Error analyzing position:', error);
+    return null;
+  }
+}
+
+/**
+ * Analyzes complete game with native Stockfish
+ */
+async function handleStockfishAnalyzeGame(
+  event: IpcMainInvokeEvent,
+  game: { moves: Array<{ from: string; to: string; promotion?: string }> }
+): Promise<Record<string, StockfishAnalysis> | null> {
+  try {
+    if (!nativeStockfish) {
+      throw new Error('Native Stockfish not initialized');
+    }
+    
+    // Convert game moves to PGN for analysis
+    // For now, we'll implement the same logic as the WASM version
+    const { Chess } = await import('chess.js');
+    const chess = new Chess();
+    const results: Record<string, StockfishAnalysis> = {};
+    
+    const totalPositions = game.moves.length + 1;
+    let analyzedPositions = 0;
+    
+    console.log(`[Native] Starting game analysis: ${totalPositions} positions at depth 22`);
+    
+    // Analyze starting position
+    try {
+      const startAnalysis = await nativeStockfish.analyze(chess.fen(), 22);
+      
+      // Convert UCI to SAN for best move
+      if (startAnalysis.bestMove && !startAnalysis.bestMoveSan) {
+        try {
+          const tempChess = new Chess(chess.fen());
+          const from = startAnalysis.bestMove.slice(0, 2);
+          const to = startAnalysis.bestMove.slice(2, 4);
+          const promotion = startAnalysis.bestMove.slice(4, 5);
+          
+          const bestMoveResult = tempChess.move({
+            from: from as any,
+            to: to as any,
+            promotion: promotion || undefined
+          });
+          
+          if (bestMoveResult) {
+            startAnalysis.bestMoveSan = bestMoveResult.san;
+          }
+        } catch (error) {
+          console.warn('Failed to convert UCI to SAN for starting position:', error);
+        }
+      }
+      
+      results['0'] = startAnalysis;
+      analyzedPositions++;
+      event.sender.send('stockfish-progress', {
+        analyzed: analyzedPositions,
+        total: totalPositions
+      });
+    } catch (error) {
+      console.error('[Native] Failed to analyze starting position:', error);
+    }
+    
+    // Analyze each position
+    for (let i = 0; i < game.moves.length; i++) {
+      const move = game.moves[i];
+      
+      try {
+        const moveResult = chess.move({
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion
+        });
+        
+        if (!moveResult) {
+          console.error(`[Native] Move ${i + 1} failed validation`);
+          continue;
+        }
+        
+        console.log(`[Native] Analyzing position ${i + 1}/${game.moves.length} after ${moveResult.san}...`);
+        const analysis = await nativeStockfish.analyze(chess.fen(), 22);
+        
+        // Convert UCI to SAN for best move
+        if (analysis.bestMove && !analysis.bestMoveSan) {
+          try {
+            const tempChess = new Chess(chess.fen());
+            const from = analysis.bestMove.slice(0, 2);
+            const to = analysis.bestMove.slice(2, 4);
+            const promotion = analysis.bestMove.slice(4, 5);
+            
+            const bestMoveResult = tempChess.move({
+              from: from as any,
+              to: to as any,
+              promotion: promotion || undefined
+            });
+            
+            if (bestMoveResult) {
+              analysis.bestMoveSan = bestMoveResult.san;
+            }
+          } catch (error) {
+            console.warn('Failed to convert UCI to SAN:', error);
+          }
+        }
+        
+        results[String(i + 1)] = analysis;
+        analyzedPositions++;
+        
+        // Send progress update
+        event.sender.send('stockfish-progress', {
+          analyzed: analyzedPositions,
+          total: totalPositions
+        });
+      } catch (error) {
+        console.error(`[Native] Failed to analyze position after move ${i + 1}:`, error);
+      }
+    }
+    
+    console.log(`[Native] Game analysis complete: ${analyzedPositions}/${totalPositions} positions analyzed`);
+    return results;
+  } catch (error) {
+    console.error('[IPC] Error analyzing game:', error);
+    return null;
+  }
+}
+
+/**
+ * Destroys native Stockfish engine
+ */
+async function handleStockfishDestroy(): Promise<void> {
+  if (nativeStockfish) {
+    nativeStockfish.destroy();
+    nativeStockfish = null;
+  }
 } 

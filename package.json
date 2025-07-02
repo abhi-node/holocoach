@@ -8,16 +8,17 @@
   "private": true,
   "homepage": "https://github.com/yourusername/holocoach",
   "scripts": {
-    "dev": "npm run build:main && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev": "node scripts/copy-stockfish.js && npm run build:main && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:3000 && electron .",
-    "build": "npm run build:main && npm run build:renderer",
+    "build": "node scripts/copy-stockfish.js && npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,scss,json}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,scss,json}\"",
+    "postinstall": "node scripts/copy-stockfish.js"
   },
   "devDependencies": {
     "@types/chess.js": "^0.13.7",
@@ -45,36 +46,46 @@
     "chess.js": "^1.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "stockfish.js": "^10.0.2",
     "zustand": "^4.4.7"
   },
   "build": {
-    "appId": "com.holocoach.app",
     "productName": "HoloCoach",
+    "appId": "com.holocoach.desktop",
     "directories": {
       "output": "release"
     },
-    "files": [
-      "dist/**/*",
-      "node_modules/**/*",
-      "package.json"
+    "extraResources": [
+      {
+        "from": "src/main/binaries/mac/stockfish",
+        "to": "stockfish/mac/stockfish",
+        "filter": ["**/*"]
+      }
     ],
     "mac": {
       "category": "public.app-category.education",
-      "target": [
+      "icon": "build/icon.icns"
+    },
+    "dmg": {
+      "contents": [
         {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 150,
+          "type": "file"
         }
       ]
     },
-    "win": {
-      "target": "nsis"
-    },
-    "linux": {
-      "target": "AppImage"
-    }
+    "files": [
+      "dist",
+      "dist-electron",
+      "public/stockfish.js",
+      "public/stockfish.wasm"
+    ]
   }
 }

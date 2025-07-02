@@ -458,18 +458,32 @@ body {
         font-size: 0.875rem;
         
         .player {
-          font-weight: 500;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          min-width: 0; // Allow text truncation
           
-          .rating {
+          .player-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+          }
+          
+          .player-rating {
+            font-size: 0.625rem; // Much smaller
             color: var(--text-muted);
             font-weight: normal;
-            margin-left: 4px;
+            opacity: 0.8;
           }
         }
         
         .vs {
           color: var(--text-muted);
-          font-size: 0.75rem;
+          font-size: 0.625rem;
+          flex-shrink: 0;
+          margin: 0 4px;
         }
       }
       
@@ -562,6 +576,7 @@ body {
     
     .board-section {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       min-width: 0;
@@ -608,14 +623,27 @@ body {
 // =============================================================================
 
 .chess-board-container {
-  // Container styles handled inline in component
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 .chess-board-header {
-  // Header styles handled inline in component
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .flip-board-button {
+  background: none;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-secondary);
   transition: all 150ms ease-out;
   
   &:hover {
@@ -974,6 +1002,34 @@ body {
 
 .text-secondary {
   color: var(--text-secondary);
+}
+
+// =============================================================================
+// Animations
+// =============================================================================
+
+// =============================================================================
+// Chess Move Quality Styles
+// =============================================================================
+
+.move-good {
+  color: var(--move-best);
+}
+
+.move-inaccuracy {
+  color: #F59E0B;
+}
+
+.move-mistake {
+  color: var(--move-mistake);
+}
+
+.move-blunder {
+  color: var(--move-blunder);
+}
+
+.move-active {
+  background-color: rgba(59, 130, 246, 0.2);
 }
 
 // =============================================================================
@@ -1366,6 +1422,8 @@ body {
     border: 1px solid var(--border-subtle);
     font-size: var(--font-sm);
     line-height: 1.6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
     
     strong {
       color: var(--text-primary);
@@ -1384,36 +1442,35 @@ body {
     .move-blunder {
       color: var(--move-mistake);
     }
+    
+    &:hover {
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
   }
   
   .navigation-controls {
     display: flex;
     justify-content: center;
-    gap: var(--space-2);
+    gap: 4px;
+    margin: 8px 0;
     
     button {
-      width: 36px;
-      height: 36px;
+      padding: 6px 12px;
+      font-size: 0.875rem;
       border: 1px solid var(--border-default);
-      background: var(--bg-panel);
+      background: var(--bg-surface);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: var(--font-base);
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
       
-      &:hover:not(:disabled) {
+      &:hover {
         background: var(--bg-hover);
-        transform: translateY(-1px);
+        border-color: var(--text-primary);
       }
       
       &:active {
-        transform: translateY(0);
-      }
-      
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+        transform: scale(0.95);
       }
     }
   }
@@ -2034,24 +2091,26 @@ body {
     .platform-selector {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
       
       .platform-button {
-        padding: 12px 16px;
+        padding: 8px 12px;
         background: var(--bg-surface);
         border: 1px solid var(--border-default);
         border-radius: 4px;
         color: var(--text-secondary);
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         cursor: pointer;
         transition: all 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
         
         svg {
           flex-shrink: 0;
+          width: 16px;
+          height: 16px;
         }
         
         &:hover:not(:disabled) {
@@ -2136,6 +2195,25 @@ body {
 // =============================================================================
 // Responsive Adjustments
 // =============================================================================
+
+// Games List Panel specific adjustments
+.games-list-panel {
+  .game-sync-form {
+    .platform-selector {
+      // Make buttons more compact in the sidebar
+      .platform-button {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        gap: 4px;
+        
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+      }
+    }
+  }
+}
 
 @media (max-width: 1200px) {
   .game-analyzer-panel {

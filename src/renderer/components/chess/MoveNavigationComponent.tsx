@@ -53,6 +53,27 @@ function getMoveQualityClass(quality?: MoveQuality): string {
 }
 
 /**
+ * Formats evaluation score for display
+ * Evaluations are always from White's perspective:
+ * - Positive values mean White is better
+ * - Negative values mean Black is better
+ */
+function formatEval(evaluation: number, mate?: number): string {
+  if (mate !== undefined) {
+    return `M${Math.abs(mate)}`;
+  }
+  
+  const pawns = evaluation / 100;
+  const sign = pawns > 0 ? '+' : '';
+  
+  if (Math.abs(pawns) >= 1) {
+    return `${sign}${pawns.toFixed(1)}`;
+  } else {
+    return `${sign}${(evaluation / 100).toFixed(2)}`;
+  }
+}
+
+/**
  * Calculate game statistics
  */
 function calculateStats(moves: any[]) {
@@ -93,9 +114,17 @@ function calculateStats(moves: any[]) {
 }
 
 /**
+ * Props for MoveNavigationComponent
+ */
+export interface MoveNavigationComponentProps {
+  /** Current best move from Stockfish analysis */
+  bestMove?: string;
+}
+
+/**
  * Move Navigation Component with quality indicators
  */
-export function MoveNavigationComponent(): JSX.Element {
+export function MoveNavigationComponent({ bestMove }: MoveNavigationComponentProps): JSX.Element {
   const {
     currentGame,
     currentMoveIndex,
@@ -104,10 +133,17 @@ export function MoveNavigationComponent(): JSX.Element {
     goToEnd,
     nextMove,
     previousMove,
+    gameAnalysis,
   } = useChessStore();
 
   const moveListRef = useRef<HTMLDivElement>(null);
-
+  
+  // Get analysis for current position
+  // When viewing a move, we want the analysis BEFORE that move was played
+  // So for move 0, we want analysis of starting position (index 0)
+  // For move 1, we want analysis after move 0 (index 1), etc.
+  const currentAnalysis = gameAnalysis?.get(currentMoveIndex) || null;
+  
   // Auto-scroll to current move
   useEffect(() => {
     if (moveListRef.current && currentMoveIndex >= 0) {
@@ -159,63 +195,122 @@ export function MoveNavigationComponent(): JSX.Element {
     <div className="move-navigation" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {/* Move Quality Explanation */}
       <div className="move-explanation" style={{ 
-        minHeight: '40px', 
-        fontSize: '0.75rem',
-        padding: '8px',
-        background: 'rgba(0,0,0,0.05)',
-        borderRadius: '4px'
+        minHeight: '80px', 
+        fontSize: '0.875rem',
+        padding: '12px',
+        background: 'var(--bg-surface)',
+        borderRadius: '8px',
+        border: '1px solid var(--border-default)'
       }}>
-        {currentMoveIndex >= 0 && currentGame.moves[currentMoveIndex] && (
-          <>
-            <strong>Move {currentMoveIndex + 1}:</strong>{' '}
-            {currentGame.moves[currentMoveIndex].quality === 'blunder' && (
-              <span className="move-blunder">
-                Blunder! Consider the tactical consequences.
-              </span>
+        {currentMoveIndex >= 0 && currentGame.moves[currentMoveIndex] ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>Played:</strong> 
+                <span style={{ 
+                  fontFamily: 'monospace', 
+                  fontSize: '1rem',
+                  fontWeight: '600' 
+                }}>
+                  {currentGame.moves[currentMoveIndex].san}
+                </span>
+                {getMoveQualitySymbol(currentGame.moves[currentMoveIndex].quality) && (
+                  <span className={getMoveQualityClass(currentGame.moves[currentMoveIndex].quality)} style={{ fontSize: '1rem' }}>
+                    {getMoveQualitySymbol(currentGame.moves[currentMoveIndex].quality)}
+                  </span>
+                )}
+              </div>
+              {currentAnalysis && (
+                <div style={{ 
+                  fontWeight: 'bold', 
+                  fontSize: '1rem',
+                  color: currentAnalysis.evaluation > 0 ? '#059669' : '#DC2626' 
+                }}>
+                  {formatEval(currentAnalysis.evaluation, currentAnalysis.mate)}
+                </div>
+              )}
+            </div>
+            {(currentAnalysis?.bestMoveSan || bestMove) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>Best:</strong> 
+                <span style={{ 
+                  color: '#059669',
+                  fontFamily: 'monospace',
+                  fontSize: '1rem',
+                  fontWeight: '600'
+                }}>
+                  {currentAnalysis?.bestMoveSan || bestMove}
+                </span>
+                <span style={{ 
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-muted)',
+                  fontStyle: 'italic'
+                }}>
+                  (depth 22)
+                </span>
+              </div>
             )}
-            {currentGame.moves[currentMoveIndex].quality === 'mistake' && (
-              <span className="move-mistake">
-                Mistake. Better continuation available.
-              </span>
+          </div>
+        ) : (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              color: 'var(--text-muted)'
+            }}>
+              <span>{currentMoveIndex === -1 ? 'Starting position' : 'No move at this position'}</span>
+              {currentAnalysis && (
+                <div style={{ 
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  color: currentAnalysis.evaluation > 0 ? '#059669' : '#DC2626' 
+                }}>
+                  {formatEval(currentAnalysis.evaluation, currentAnalysis.mate)}
+                </div>
+              )}
+            </div>
+            {currentAnalysis?.bestMoveSan && currentMoveIndex === -1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>Best:</strong> 
+                <span style={{ 
+                  color: '#059669',
+                  fontFamily: 'monospace',
+                  fontSize: '1rem',
+                  fontWeight: '600'
+                }}>
+                  {currentAnalysis.bestMoveSan}
+                </span>
+                <span style={{ 
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-muted)',
+                  fontStyle: 'italic'
+                }}>
+                  (depth 22)
+                </span>
+              </div>
             )}
-            {currentGame.moves[currentMoveIndex].quality === 'inaccuracy' && (
-              <span className="move-inaccuracy">
-                Inaccuracy. More accurate move available.
-              </span>
-            )}
-            {(currentGame.moves[currentMoveIndex].quality === 'best' || 
-              currentGame.moves[currentMoveIndex].quality === 'excellent') && (
-              <span className="move-good">
-                Excellent choice!
-              </span>
-            )}
-            {currentGame.moves[currentMoveIndex].quality === 'good' && (
-              <span className="move-good">
-                Good move.
-              </span>
-            )}
-            {!currentGame.moves[currentMoveIndex].quality && (
-              <span className="text-muted">
-                Move played.
-              </span>
-            )}
-          </>
+          </div>
         )}
       </div>
 
       {/* Navigation Controls */}
-      <div className="navigation-controls" style={{ display: 'flex', justifyContent: 'center', gap: '4px' }}>
-        <button onClick={goToStart} title="Go to start (Home)" style={{ padding: '4px 8px', fontSize: '0.875rem' }}>
-          ⏮
+      <div className="navigation-controls">
+        <button onClick={goToStart} title="Go to start (Home)">
+          ⏮ Start
         </button>
-        <button onClick={previousMove} title="Previous move (←)" style={{ padding: '4px 8px', fontSize: '0.875rem' }}>
-          ◀
+        <button onClick={previousMove} title="Previous move (←)">
+          ◀ Prev
         </button>
-        <button onClick={nextMove} title="Next move (→)" style={{ padding: '4px 8px', fontSize: '0.875rem' }}>
-          ▶
+        <button onClick={nextMove} title="Next move (→)">
+          Next ▶
         </button>
-        <button onClick={goToEnd} title="Go to end (End)" style={{ padding: '4px 8px', fontSize: '0.875rem' }}>
-          ⏭
+        <button onClick={goToEnd} title="Go to end (End)">
+          End ⏭
         </button>
       </div>
 

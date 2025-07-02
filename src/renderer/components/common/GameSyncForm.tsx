@@ -81,7 +81,7 @@ export const GameSyncForm: React.FC<GameSyncFormProps> = ({
             onClick={() => handlePlatformChange('chess.com')}
             disabled={isSyncing}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
               <path d="M12 7a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V9a2 2 0 0 0-2-2z"/>
             </svg>
@@ -94,7 +94,7 @@ export const GameSyncForm: React.FC<GameSyncFormProps> = ({
             onClick={() => handlePlatformChange('lichess')}
             disabled={isSyncing}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
               <path d="M12 6l1.5 4.5L18 12l-4.5 1.5L12 18l-1.5-4.5L6 12l4.5-1.5z"/>
             </svg>

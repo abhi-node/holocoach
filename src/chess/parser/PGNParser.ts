@@ -295,32 +295,27 @@ export class PGNParser {
           // Make the move
           const move = this.chess.move(moveToken);
           if (!move) {
+            // Try to handle ambiguous moves
+            const ambiguousMove = this.tryAmbiguousMove(moveToken);
+            if (ambiguousMove) {
+              moves.push(this.createChessMove(ambiguousMove, i));
+              continue;
+            }
+            
             this.warnings.push(`${gameId}: Invalid move ${i + 1}: ${moveToken}`);
             continue;
           }
 
           // Create our move object
-          const chessMove: ChessMove = {
-            san: move.san,
-            uci: `${move.from}${move.to}${move.promotion || ''}`,
-            from: move.from,
-            to: move.to,
-            piece: move.piece,
-            captured: move.captured,
-            promotion: move.promotion,
-            check: this.chess.inCheck(),
-            checkmate: this.chess.isCheckmate(),
-            fen: this.chess.fen(),
-            moveNumber: Math.floor(i / 2) + 1,
-            // Analysis data will be added later
-            evaluation: undefined,
-            bestMove: undefined,
-            quality: this.inferMoveQuality(i, move.captured),
-            annotation: undefined,
-          };
-
-          moves.push(chessMove);
+          moves.push(this.createChessMove(move, i));
         } catch (moveError) {
+          // Try to handle ambiguous moves
+          const ambiguousMove = this.tryAmbiguousMove(moveToken);
+          if (ambiguousMove) {
+            moves.push(this.createChessMove(ambiguousMove, i));
+            continue;
+          }
+          
           this.warnings.push(`${gameId}: Failed to parse move ${i + 1}: ${moveToken}`);
           continue;
         }
@@ -378,6 +373,62 @@ export class PGNParser {
     }
     
     return tokens;
+  }
+
+  /**
+   * Tries to resolve ambiguous moves
+   */
+  private tryAmbiguousMove(moveToken: string): any {
+    // Check if it's a simple destination square (like "f6")
+    const squareMatch = moveToken.match(/^([a-h][1-8])$/);
+    if (squareMatch) {
+      const to = squareMatch[1];
+      
+      // Try different pieces that could move to this square
+      const possibleMoves = this.chess.moves({ verbose: true }).filter(m => m.to === to);
+      
+      if (possibleMoves.length === 1) {
+        // Only one legal move to this square
+        return this.chess.move(possibleMoves[0]);
+      }
+    }
+    
+    // Try to handle other ambiguous cases
+    // Remove check/checkmate symbols and try again
+    const cleanedMove = moveToken.replace(/[+#!?]/g, '');
+    if (cleanedMove !== moveToken) {
+      try {
+        return this.chess.move(cleanedMove);
+      } catch {
+        // Continue to next attempt
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Creates a ChessMove object from a chess.js move
+   */
+  private createChessMove(move: any, index: number): ChessMove {
+    return {
+      san: move.san,
+      uci: `${move.from}${move.to}${move.promotion || ''}`,
+      from: move.from,
+      to: move.to,
+      piece: move.piece,
+      captured: move.captured,
+      promotion: move.promotion,
+      check: this.chess.inCheck(),
+      checkmate: this.chess.isCheckmate(),
+      fen: this.chess.fen(),
+      moveNumber: Math.floor(index / 2) + 1,
+      // Analysis data will be added later
+      evaluation: undefined,
+      bestMove: undefined,
+      quality: this.inferMoveQuality(index, move.captured),
+      annotation: undefined,
+    };
   }
 
   /**

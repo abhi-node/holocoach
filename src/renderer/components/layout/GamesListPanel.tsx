@@ -19,7 +19,7 @@ import { ChessGame } from '../../../shared/types/chess';
  * Games List Panel - Left panel of the application
  */
 export const GamesListPanel: React.FC = () => {
-  const { games, currentGame, loadGame, addGames } = useChessStore();
+  const { games, currentGame, loadGame, addGames, clearGames } = useChessStore();
   const [syncError, setSyncError] = useState<string>('');
   const [syncSuccess, setSyncSuccess] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -49,12 +49,13 @@ export const GamesListPanel: React.FC = () => {
       const fetchedGames = await window.holoCoach.games.fetchGames(username, platform, 10);
       
       if (fetchedGames.length > 0) {
-        // Add games to the store
+        // Clear existing games and add new ones
+        clearGames();
         addGames(fetchedGames);
         setSyncSuccess(`Successfully synced ${fetchedGames.length} games from ${platform}`);
         
-        // Auto-select the first game if no game is currently selected
-        if (!currentGame && fetchedGames.length > 0) {
+        // Auto-select the first game
+        if (fetchedGames.length > 0) {
           loadGame(fetchedGames[0]);
         }
       } else {
@@ -75,11 +76,12 @@ export const GamesListPanel: React.FC = () => {
    */
   const loadSampleGames = () => {
     const sampleGames = getSampleGames();
+    clearGames();
     addGames(sampleGames);
     setSyncSuccess(`Loaded ${sampleGames.length} sample games`);
     
-    // Auto-select the first game if no game is currently selected
-    if (!currentGame && sampleGames.length > 0) {
+    // Auto-select the first game
+    if (sampleGames.length > 0) {
       loadGame(sampleGames[0]);
     }
   };
@@ -134,19 +136,19 @@ export const GamesListPanel: React.FC = () => {
               onClick={() => loadGame(game)}
             >
               <div className="game-players">
-                <span className="player white-player">
-                  {game.metadata.white.name}
+                <div className="player white-player">
+                  <div className="player-name">{game.metadata.white.name}</div>
                   {game.metadata.white.rating && (
-                    <span className="rating">({game.metadata.white.rating})</span>
+                    <div className="player-rating">{game.metadata.white.rating}</div>
                   )}
-                </span>
+                </div>
                 <span className="vs">vs</span>
-                <span className="player black-player">
-                  {game.metadata.black.name}
+                <div className="player black-player">
+                  <div className="player-name">{game.metadata.black.name}</div>
                   {game.metadata.black.rating && (
-                    <span className="rating">({game.metadata.black.rating})</span>
+                    <div className="player-rating">{game.metadata.black.rating}</div>
                   )}
-                </span>
+                </div>
               </div>
               
               <div className="game-info">
