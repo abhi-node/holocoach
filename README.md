@@ -20,11 +20,9 @@ After every online game, chess players typically spend 10-15 minutes:
 
 ### The Solution
 HoloCoach automates this entire workflow:
-- 🔄 **Auto-syncs** your recent games from Chess.com or Lichess
 - 🤖 **Analyzes** positions locally with Stockfish
 - 💬 **Explains** moves in plain English using GPT-4o mini
 - 🎓 **Coaches** you through an interactive chat interface
-- 📊 **Tracks** your progress and patterns over time
 
 ## ✨ Features
 
@@ -32,12 +30,9 @@ HoloCoach automates this entire workflow:
 - **Multi-Platform Sync**: Retrieve games from Chess.com and Lichess automatically
 - **One-Click Import**: Fetch your recent games with a single button click
 - **Sample Games**: Built-in famous games for immediate analysis (Carlsen, Nakamura, etc.)
-- **PGN Support**: Full PGN parsing with metadata extraction
-- **Game History**: Persistent storage with SQLite database
 
 ### 🔍 Advanced Analysis Engine
 - **Native Stockfish Integration**: High-performance native Stockfish engine (depth 20+)
-- **WASM Fallback**: Browser-compatible Stockfish for cross-platform support
 - **Real-time Evaluation**: Live position assessment with centipawn precision
 - **Best Move Suggestions**: Engine-recommended moves with variations
 - **Mate Detection**: Accurate mate-in-N calculations
@@ -58,7 +53,6 @@ HoloCoach automates this entire workflow:
 - **Move Navigation**: Navigate through games with full analysis retention
 - **Position Highlighting**: Current move indication with quality symbols
 - **Statistics Overview**: Game-wide performance metrics
-- **Move-by-Move Breakdown**: Detailed analysis of every position
 
 ### 🤖 AI Chess Coach
 - **Conversational Analysis**: Ask questions about any position in natural language
@@ -266,25 +260,6 @@ The system uses a sophisticated centipawn-loss based classification:
 - Accounts for mate positions and sign changes
 - Provides both discrete categories and continuous accuracy scores
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](_docs/CONTRIBUTING.md) for details.
-
-### Development Setup
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow the coding standards in [`_docs/project-rules.md`](_docs/project-rules.md)
-4. Commit your changes (`git commit -m 'feat(scope): add amazing feature'`)
-5. Push to your fork (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
-
-### Code Style
-- TypeScript with strict mode
-- Functional React components
-- Maximum 500 lines per file
-- Comprehensive JSDoc comments
-
 ## 📝 Documentation
 
 - [Project Overview](_docs/project-overview.md)
@@ -293,56 +268,6 @@ We welcome contributions! Please see our [Contributing Guidelines](_docs/CONTRIB
 - [UI Design Rules](_docs/ui-rules.md)
 - [Theme System](_docs/theme-rules.md)
 - [Development Phases](_docs/phases/)
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Docker Services Not Starting**
-```bash
-# Check if Docker Desktop is running
-docker --version
-
-# Manually start AI services
-cd chess-ai-agent
-docker-compose up -d
-
-# Check service status
-docker-compose ps
-```
-
-**AI Chat Not Responding**
-- Ensure n8n service is running: `docker logs chess-ai-agent-n8n-1`
-- Check if webhook endpoint is registered in n8n at `localhost:5678`
-- Verify OpenAI API key is set in `chess-ai-agent/.env`
-
-**Stockfish Analysis Failing**
-```bash
-# For WASM issues, ensure SharedArrayBuffer support
-npm run dev -- --enable-features=SharedArrayBuffer
-
-# For native Stockfish issues, check binary permissions
-chmod +x src/main/binaries/mac/stockfish
-```
-
-**Database Issues**
-- Close any other instances of HoloCoach
-- Delete `holocoach.db-wal` and `holocoach.db-shm` files
-- Restart the application
-
-**High Memory Usage**
-- Reduce analysis depth in engine settings
-- Close unused games in the games list
-- Restart application to clear Stockfish instances
-
-**Game Sync Issues**
-- Verify username spelling for Chess.com/Lichess
-- Check if your profile is public on the respective platform
-- Rate limiting: Wait a few minutes between sync attempts
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
