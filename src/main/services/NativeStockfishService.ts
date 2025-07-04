@@ -12,6 +12,7 @@
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import { app } from 'electron';
+import { MoveQuality } from '../../shared/types/chess';
 
 export interface StockfishAnalysis {
   evaluation: number;
@@ -19,6 +20,7 @@ export interface StockfishAnalysis {
   bestMoveSan?: string;
   depth: number;
   mate?: number;
+  quality?: MoveQuality;
 }
 
 /**

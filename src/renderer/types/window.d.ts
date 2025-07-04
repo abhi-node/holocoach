@@ -71,6 +71,10 @@ declare global {
         onProgress: (callback: (progress: { analyzed: number; total: number }) => void) => void;
         offProgress: () => void;
       };
+
+      aiChat: {
+        analyzePosition: (pgn: string, fen: string, question: string) => Promise<any>;
+      };
     };
   }
 

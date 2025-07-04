@@ -31,7 +31,9 @@ function getSquareCoordinates(
   const rankIndex = parseInt(rank) - 1; // 1=0, 2=1, etc.
   
   // Determine if square is light or dark
-  const isLight = (fileIndex + rankIndex) % 2 === 0;
+  // In chess, the bottom-right corner (h1) should be a light square
+  // a1 should be dark, h1 should be light
+  const isLight = (fileIndex + rankIndex) % 2 === 1;
   
   // Get piece on this square
   const piece = chess.get(square);
@@ -184,6 +186,7 @@ export function ChessBoardComponent(): JSX.Element {
 
   // Generate all squares in correct order
   const squares = useMemo(() => {
+    console.log('Regenerating squares, boardFlipped:', boardFlipped);
     const files = boardFlipped ? ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     const ranks = boardFlipped ? ['1', '2', '3', '4', '5', '6', '7', '8'] : ['8', '7', '6', '5', '4', '3', '2', '1'];
     
@@ -225,10 +228,13 @@ export function ChessBoardComponent(): JSX.Element {
       <div className="chess-board-header">
         <button 
           className="flip-board-button"
-          onClick={flipBoard}
+          onClick={() => {
+            console.log('Flip board button clicked, current boardFlipped:', boardFlipped);
+            flipBoard();
+          }}
           title="Flip board"
         >
-          ⟲ Flip Board
+          ⟲ Flip Board {boardFlipped ? '(Flipped)' : '(Normal)'}
         </button>
       </div>
       

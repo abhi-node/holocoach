@@ -4,11 +4,8 @@
  * 
  * Implements token bucket algorithm for rate limiting API requests
  * to comply with Chess.com and Lichess API limits.
- * 
- * @requires events
+ * Browser-compatible implementation without Node.js EventEmitter.
  */
-
-import { EventEmitter } from 'events';
 
 /**
  * Rate limiter configuration
@@ -23,20 +20,52 @@ export interface RateLimiterConfig {
 }
 
 /**
- * Rate limiter using token bucket algorithm
+ * Simple event listener type
  */
-export class RateLimiter extends EventEmitter {
+type EventListener = (data: any) => void;
+
+/**
+ * Rate limiter using token bucket algorithm
+ * Browser-compatible implementation
+ */
+export class RateLimiter {
   private tokens: number;
   private lastRefill: number;
   private queue: Array<() => void> = [];
+  private listeners: Map<string, EventListener[]> = new Map();
   
   constructor(private config: RateLimiterConfig) {
-    super();
     this.tokens = config.maxRequests;
     this.lastRefill = Date.now();
     
     // Start the refill timer
     this.startRefillTimer();
+  }
+  
+  /**
+   * Adds an event listener
+   */
+  on(event: string, listener: EventListener): void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+    this.listeners.get(event)!.push(listener);
+  }
+  
+  /**
+   * Emits an event to all listeners
+   */
+  private emit(event: string, data?: any): void {
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners) {
+      eventListeners.forEach(listener => {
+        try {
+          listener(data);
+        } catch (error) {
+          console.error(`Error in event listener for ${event}:`, error);
+        }
+      });
+    }
   }
   
   /**

@@ -120,6 +120,15 @@ export class NativeStockfishAdapter {
   }
   
   /**
+   * Cancels any ongoing analysis
+   */
+  cancel(): void {
+    // Native engine doesn't currently support cancellation
+    // Analysis will complete on the main process
+    console.log('Native Stockfish analysis cancellation requested (not implemented)');
+  }
+  
+  /**
    * Waits for any ongoing analysis to complete
    */
   async waitForCurrentAnalysis(): Promise<void> {

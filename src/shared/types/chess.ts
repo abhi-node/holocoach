@@ -59,11 +59,9 @@ export interface ChessMove {
  */
 export type MoveQuality = 
   | 'best'        // Engine's top choice
-  | 'excellent'   // Within 25cp of best
-  | 'good'        // Within 50cp of best  
-  | 'inaccuracy'  // 50-100cp worse
-  | 'mistake'     // 100-200cp worse
-  | 'blunder';    // 200cp+ worse
+  | 'okay'        // Not the best, but doesn't worsen the position
+  | 'inaccuracy'  // Slightly worsens the position or loses part of an advantage
+  | 'blunder';    // Significantly worse or completely loses an advantage
 
 /**
  * Game source platform

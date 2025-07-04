@@ -435,24 +435,18 @@ export class PGNParser {
    * Infers basic move quality (will be enhanced with engine analysis later)
    */
   private inferMoveQuality(moveIndex: number, captured?: string): MoveQuality | undefined {
-    // Basic heuristics for now
-    if (captured && ['q', 'r'].includes(captured)) {
-      return 'excellent'; // Capturing major pieces
-    }
-    
+    // Don't classify opening moves
     if (moveIndex < 10) {
-      return undefined; // Opening moves are hard to judge
+      return undefined;
     }
     
-    // Random quality for demonstration (will be replaced with real analysis)
-    const rand = Math.random();
-    if (rand < 0.1) return 'best';
-    if (rand < 0.2) return 'excellent';
-    if (rand < 0.4) return 'good';
-    if (rand < 0.6) return undefined;
-    if (rand < 0.8) return 'inaccuracy';
-    if (rand < 0.95) return 'mistake';
-    return 'blunder';
+    // Basic heuristics for demonstration (will be replaced with real analysis)
+    if (captured && ['q', 'r'].includes(captured)) {
+      return 'best'; // Capturing major pieces
+    }
+    
+    // Return undefined for now - actual classification will be done by engine analysis
+    return undefined;
   }
 
   /**

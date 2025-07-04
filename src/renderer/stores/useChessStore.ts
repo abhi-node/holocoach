@@ -121,6 +121,8 @@ export const useChessStore = create<ChessStoreState>()(
       (set, get) => {
         // Debounced analysis timer
         let analysisTimer: NodeJS.Timeout | null = null;
+        // Current analysis operation
+        let currentAnalysisOperation: { stockfish: any; promise: Promise<any> } | null = null;
         
         return {
           ...createInitialState(),
@@ -145,6 +147,13 @@ export const useChessStore = create<ChessStoreState>()(
             if (analysisTimer) {
               clearTimeout(analysisTimer);
               analysisTimer = null;
+            }
+            
+            // Cancel any ongoing analysis
+            if (currentAnalysisOperation) {
+              console.log('Cancelling previous game analysis');
+              currentAnalysisOperation.stockfish.cancel();
+              currentAnalysisOperation = null;
             }
             
             set((state) => ({
@@ -416,6 +425,13 @@ export const useChessStore = create<ChessStoreState>()(
             const { currentGame } = get();
             if (!currentGame) return;
 
+            // Cancel any ongoing analysis first
+            if (currentAnalysisOperation) {
+              console.log('Cancelling previous analysis to start new one');
+              currentAnalysisOperation.stockfish.cancel();
+              currentAnalysisOperation = null;
+            }
+
             // Don't start a new analysis if one is already running
             if (get().isAnalyzingGame) {
               console.log('Analysis already in progress');
@@ -462,8 +478,8 @@ export const useChessStore = create<ChessStoreState>()(
               console.log(`Starting analysis for game: ${currentGame.id}`);
               console.log(`Game has ${currentGame.moves.length} moves`);
               
-              // Analyze the game with progress callback
-              const analysisResults = await stockfish.analyzeGame(
+              // Track the current analysis operation
+              const analysisPromise = stockfish.analyzeGame(
                 currentGame,
                 (ply, totalPlies) => {
                   const progress = Math.round((ply / totalPlies) * 100);
@@ -471,29 +487,66 @@ export const useChessStore = create<ChessStoreState>()(
                 }
               );
               
+              currentAnalysisOperation = { stockfish, promise: analysisPromise };
+              
+              // Analyze the game with progress callback
+              const analysisResults = await analysisPromise;
+              
+              // Apply move classifications to the actual game moves
+              const updatedGame = { ...currentGame };
+              let classificationCounts = { best: 0, okay: 0, inaccuracy: 0, blunder: 0 };
+              
+              updatedGame.moves = updatedGame.moves.map((move, index) => {
+                const analysis = analysisResults.get(index + 1); // +1 because analysis starts from ply 1
+                if (analysis && analysis.quality) {
+                  classificationCounts[analysis.quality]++;
+                  return { ...move, quality: analysis.quality };
+                }
+                return move;
+              });
+              
+              console.log(`Move classifications applied:`, classificationCounts);
+              console.log(`Total moves: ${updatedGame.moves.length}, Classified: ${Object.values(classificationCounts).reduce((a, b) => a + b, 0)}`);
+              
               // Store results and complete
-              set({
+              set((state) => ({
+                currentGame: updatedGame,
                 gameAnalysis: analysisResults,
                 isAnalyzingGame: false,
                 analysisProgress: 100,
-              });
+                // Update the game in the games list too
+                games: state.games.map(g => 
+                  g.id === updatedGame.id ? updatedGame : g
+                ),
+              }));
               
               console.log(`Analysis complete for game: ${currentGame.id}`);
               
             } catch (error) {
-              console.error(`Error analyzing game ${currentGame.id}:`, error);
-              console.error('Game details:', {
-                id: currentGame.id,
-                white: currentGame.metadata.white.name,
-                black: currentGame.metadata.black.name,
-                moveCount: currentGame.moves.length,
-                firstMoves: currentGame.moves.slice(0, 5).map(m => `${m.from}-${m.to}`)
-              });
-              set({
-                isAnalyzingGame: false,
-                analysisProgress: 0,
-              });
+              if (error instanceof Error && error.message === 'Analysis cancelled') {
+                console.log(`Analysis cancelled for game: ${currentGame.id}`);
+                set({
+                  isAnalyzingGame: false,
+                  analysisProgress: 0,
+                });
+              } else {
+                console.error(`Error analyzing game ${currentGame.id}:`, error);
+                console.error('Game details:', {
+                  id: currentGame.id,
+                  white: currentGame.metadata.white.name,
+                  black: currentGame.metadata.black.name,
+                  moveCount: currentGame.moves.length,
+                  firstMoves: currentGame.moves.slice(0, 5).map(m => `${m.from}-${m.to}`)
+                });
+                set({
+                  isAnalyzingGame: false,
+                  analysisProgress: 0,
+                });
+              }
             } finally {
+              // Clear the current analysis operation
+              currentAnalysisOperation = null;
+              
               // Always clean up Stockfish instance
               if (stockfish) {
                 try {

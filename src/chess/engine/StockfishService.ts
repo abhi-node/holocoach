@@ -8,6 +8,8 @@
  */
 
 import { Chess } from 'chess.js';
+import { MoveClassifier } from '../analysis/MoveClassifier';
+import { MoveQuality } from '../../shared/types/chess';
 
 /**
  * Stockfish analysis result
@@ -23,6 +25,8 @@ export interface StockfishAnalysis {
   depth: number;
   /** Mate in X moves (if applicable) */
   mate?: number;
+  /** Move quality classification (when analyzing games) */
+  quality?: MoveQuality;
 }
 
 /**
@@ -62,6 +66,8 @@ export class StockfishService {
   private lastInfo = Date.now();
   private analysisStartTime = Date.now();
   private watchdogTimer: NodeJS.Timeout | null = null;
+  private isCancelled = false;
+  private gameAnalysisController: AbortController | null = null;
   
   /**
    * Initializes the Stockfish engine
@@ -424,46 +430,43 @@ export class StockfishService {
   }
   
   /**
-   * Analyzes all positions in a game
+   * Analyzes a complete game and returns analysis data with move classifications
    */
   async analyzeGame(
     game: { moves: Array<{ from: string; to: string; promotion?: string }> },
     onProgress?: GameAnalysisProgress
   ): Promise<Map<number, StockfishAnalysis>> {
-    if (!this.worker || !this.isReady) {
-      throw new Error('Stockfish not initialized');
-    }
-    
-    const chess = new Chess();
-    const results = new Map<number, StockfishAnalysis>();
+    this.isCancelled = false;
+    this.gameAnalysisController = new AbortController();
     
     try {
-      // Get all moves
-      const totalPlies = game.moves.length;
-      const totalPositions = totalPlies + 1; // +1 for starting position
+      const chess = new Chess();
+      const results = new Map<number, StockfishAnalysis>();
+      
+      const totalPositions = game.moves.length;
+      const totalPlies = totalPositions;
       let analyzedPositions = 0;
       
-      console.log(`Starting game analysis: ${totalPositions} positions at depth 12`);
-      console.log(`Estimated time: ${Math.round((totalPositions * 9.6) / 60)} minutes`);
+      console.log(`Starting game analysis for ${totalPositions} positions`);
       
-      // Analyze starting position
-      try {
-        console.log(`Analyzing position 0/${totalPlies} (starting position)...`);
-        const startAnalysis = await this.analyze(chess.fen(), 12); // depth 12
-        results.set(0, startAnalysis);
-        analyzedPositions++;
-        if (onProgress) {
-          onProgress(analyzedPositions, totalPositions);
-        }
-      } catch (error) {
-        console.error('Failed to analyze starting position:', error);
-      }
+      // Analyze starting position first
+      const startingAnalysis = await this.analyze(chess.fen(), 12);
+      results.set(0, startingAnalysis);
       
-      // Analyze each position after each move
       for (let i = 0; i < game.moves.length; i++) {
+        // Check for cancellation
+        if (this.isCancelled) {
+          console.log('Game analysis cancelled');
+          throw new Error('Analysis cancelled');
+        }
+        
         const move = game.moves[i];
         
         try {
+          // Store position before move for classification
+          const positionBefore = chess.fen();
+          const isWhiteToMove = chess.turn() === 'w';
+          
           // Make the move
           const moveResult = chess.move({ 
             from: move.from, 
@@ -489,8 +492,58 @@ export class StockfishService {
           
           // Analyze current position - use depth 12 for all positions
           try {
+            if (this.isCancelled) {
+              throw new Error('Analysis cancelled');
+            }
+            
             console.log(`Analyzing position ${i + 1}/${totalPlies} after ${moveResult.san}...`);
             const analysis = await this.analyze(chess.fen(), 12);
+            
+            // Add move classification if we have analysis for the previous position
+            const previousAnalysis = results.get(i);
+            if (previousAnalysis && previousAnalysis.bestMove) {
+              try {
+                // Create a temporary chess instance to play the best move
+                const tempChess = new Chess(positionBefore);
+                const bestMoveUci = previousAnalysis.bestMove;
+                
+                // Parse and play the best move
+                const from = bestMoveUci.slice(0, 2);
+                const to = bestMoveUci.slice(2, 4);
+                const promotion = bestMoveUci.slice(4, 5);
+                
+                const bestMoveResult = tempChess.move({
+                  from: from as any,
+                  to: to as any,
+                  promotion: promotion || undefined
+                });
+                
+                if (bestMoveResult) {
+                  // Analyze position after best move
+                  const bestMoveAnalysis = await this.analyze(tempChess.fen(), 12);
+                  
+                  // Now we have all three evaluations needed for classification
+                  const evaluationBefore = previousAnalysis.evaluation;  // Before move
+                  const evaluationAfter = analysis.evaluation;           // After actual move  
+                  const evaluationBest = bestMoveAnalysis.evaluation;    // After best move
+                  
+                  // All evaluations should be from White's perspective
+                  const moveQuality = MoveClassifier.classifyMove(
+                    evaluationBefore,
+                    evaluationAfter,
+                    evaluationBest
+                  );
+                  
+                  // Add quality classification to the analysis
+                  (analysis as any).quality = moveQuality;
+                } else {
+                  console.warn(`Failed to play best move ${bestMoveUci} for classification`);
+                }
+              } catch (error) {
+                console.warn(`Error analyzing best move for classification:`, error);
+              }
+            }
+            
             results.set(i + 1, analysis);
             analyzedPositions++;
             
@@ -498,8 +551,12 @@ export class StockfishService {
             if (onProgress) {
               onProgress(analyzedPositions, totalPositions);
             }
-          } catch (analysisError) {
-            console.error(`Failed to analyze position after move ${i + 1}:`, analysisError);
+                      } catch (analysisError) {
+              if (this.isCancelled || (analysisError instanceof Error && analysisError.message === 'Analysis cancelled')) {
+                console.log('Game analysis cancelled');
+                throw new Error('Analysis cancelled');
+              }
+              console.error(`Failed to analyze position after move ${i + 1}:`, analysisError);
             // Add a placeholder result to keep the analysis going
             results.set(i + 1, {
               evaluation: 0,
@@ -514,22 +571,33 @@ export class StockfishService {
               onProgress(analyzedPositions, totalPositions);
             }
           }
-        } catch (moveError) {
-          console.error(`Failed to apply move ${i + 1}:`, {
-            move,
-            error: moveError,
-            currentFen: chess.fen()
-          });
-          // Skip this move and continue
-          continue;
-        }
+                  } catch (moveError) {
+            if (this.isCancelled || (moveError instanceof Error && moveError.message === 'Analysis cancelled')) {
+              console.log('Game analysis cancelled');
+              throw new Error('Analysis cancelled');
+            }
+            console.error(`Failed to apply move ${i + 1}:`, {
+              move,
+              error: moveError,
+              currentFen: chess.fen()
+            });
+            // Skip this move and continue
+            continue;
+          }
       }
       
       console.log(`Game analysis complete: ${analyzedPositions}/${totalPositions} positions analyzed`);
       return results;
-    } catch (error) {
-      console.error('Failed to analyze game:', error);
-      throw error;
+          } catch (error) {
+        if (this.isCancelled || (error instanceof Error && error.message === 'Analysis cancelled')) {
+          console.log('Game analysis cancelled');
+          throw new Error('Analysis cancelled');
+        }
+        console.error('Failed to analyze game:', error);
+        throw error;
+    } finally {
+      // Clean up controller
+      this.gameAnalysisController = null;
     }
   }
 
@@ -597,5 +665,41 @@ export class StockfishService {
       console.warn('Engine warm-up failed:', error);
       // Non-critical, continue anyway
     }
+  }
+
+  /**
+   * Cancels any ongoing analysis
+   */
+  cancel(): void {
+    this.isCancelled = true;
+    
+    // Send stop command to engine
+    if (this.worker && this.isReady) {
+      this.sendCommand('stop');
+    }
+    
+    // Clear analysis queue
+    this.analysisQueue = [];
+    
+    // Clear watchdog timer
+    if (this.watchdogTimer) {
+      clearInterval(this.watchdogTimer);
+      this.watchdogTimer = null;
+    }
+    
+    // Reject pending resolvers
+    const resolver = this.resolvers.get('current');
+    if (resolver) {
+      this.resolvers.delete('current');
+    }
+    
+    // Abort game analysis controller
+    if (this.gameAnalysisController) {
+      this.gameAnalysisController.abort();
+    }
+    
+    this.isAnalyzing = false;
+    
+    console.log('Stockfish analysis cancelled');
   }
 }

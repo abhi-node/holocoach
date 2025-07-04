@@ -12,9 +12,12 @@ import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { GameFetcherService, GameFetchProgress } from '../services/GameFetcherService';
 import { ChessGame } from '../../shared/types/chess';
 import { NativeStockfishService, StockfishAnalysis } from '../services/NativeStockfishService';
+import { AIChatService } from '../services/AIChatService';
+import { AIChatResponse } from '../../shared/types/ai-chat';
 
 // Service instances
 const gameFetcherService = new GameFetcherService();
+const aiChatService = new AIChatService();
 let nativeStockfish: NativeStockfishService | null = null;
 
 /**
@@ -37,6 +40,9 @@ export function setupIpcHandlers(): void {
   ipcMain.handle('stockfish-analyze', handleStockfishAnalyze);
   ipcMain.handle('stockfish-analyze-game', handleStockfishAnalyzeGame);
   ipcMain.handle('stockfish-destroy', handleStockfishDestroy);
+  
+  // AI Chat handlers
+  ipcMain.handle('ai-chat-analyze', handleAIChatAnalyze);
   
   // Settings handlers
   ipcMain.handle('get-settings', handleGetSettings);
@@ -363,42 +369,22 @@ async function handleStockfishAnalyzeGame(
       throw new Error('Native Stockfish not initialized');
     }
     
-    // Convert game moves to PGN for analysis
-    // For now, we'll implement the same logic as the WASM version
+    // Import required modules
     const { Chess } = await import('chess.js');
+    const { MoveClassifier } = await import('../../chess/analysis/MoveClassifier');
     const chess = new Chess();
     const results: Record<string, StockfishAnalysis> = {};
     
     const totalPositions = game.moves.length + 1;
     let analyzedPositions = 0;
     
-    console.log(`[Native] Starting game analysis: ${totalPositions} positions at depth 22`);
+    console.log(`[Native] Starting game analysis: ${totalPositions} positions at depth 20`);
     
     // Analyze starting position
     try {
-      const startAnalysis = await nativeStockfish.analyze(chess.fen(), 22);
+      const startAnalysis = await nativeStockfish.analyze(chess.fen(), 20);
       
-      // Convert UCI to SAN for best move
-      if (startAnalysis.bestMove && !startAnalysis.bestMoveSan) {
-        try {
-          const tempChess = new Chess(chess.fen());
-          const from = startAnalysis.bestMove.slice(0, 2);
-          const to = startAnalysis.bestMove.slice(2, 4);
-          const promotion = startAnalysis.bestMove.slice(4, 5);
-          
-          const bestMoveResult = tempChess.move({
-            from: from as any,
-            to: to as any,
-            promotion: promotion || undefined
-          });
-          
-          if (bestMoveResult) {
-            startAnalysis.bestMoveSan = bestMoveResult.san;
-          }
-        } catch (error) {
-          console.warn('Failed to convert UCI to SAN for starting position:', error);
-        }
-      }
+      // Skip SAN conversion during analysis - will do it later
       
       results['0'] = startAnalysis;
       analyzedPositions++;
@@ -414,12 +400,12 @@ async function handleStockfishAnalyzeGame(
     for (let i = 0; i < game.moves.length; i++) {
       const move = game.moves[i];
       
-      try {
-        const moveResult = chess.move({
-          from: move.from,
-          to: move.to,
-          promotion: move.promotion
-        });
+              try {
+          const moveResult = chess.move({
+            from: move.from,
+            to: move.to,
+            promotion: move.promotion
+          });
         
         if (!moveResult) {
           console.error(`[Native] Move ${i + 1} failed validation`);
@@ -427,29 +413,63 @@ async function handleStockfishAnalyzeGame(
         }
         
         console.log(`[Native] Analyzing position ${i + 1}/${game.moves.length} after ${moveResult.san}...`);
-        const analysis = await nativeStockfish.analyze(chess.fen(), 22);
+        const analysis = await nativeStockfish.analyze(chess.fen(), 20);
         
-        // Convert UCI to SAN for best move
-        if (analysis.bestMove && !analysis.bestMoveSan) {
-          try {
-            const tempChess = new Chess(chess.fen());
-            const from = analysis.bestMove.slice(0, 2);
-            const to = analysis.bestMove.slice(2, 4);
-            const promotion = analysis.bestMove.slice(4, 5);
-            
-            const bestMoveResult = tempChess.move({
-              from: from as any,
-              to: to as any,
-              promotion: promotion || undefined
-            });
-            
-            if (bestMoveResult) {
-              analysis.bestMoveSan = bestMoveResult.san;
-            }
-          } catch (error) {
-            console.warn('Failed to convert UCI to SAN:', error);
-          }
-        }
+                 // Add move classification if we have analysis for the previous position
+         const previousAnalysis = results[String(i)];
+         if (previousAnalysis && previousAnalysis.bestMove) {
+           try {
+             // Create a temporary chess instance to play the best move  
+             const tempChess = new Chess();
+             // Reset to the position before this move
+             for (let j = 0; j < i; j++) {
+               tempChess.move({
+                 from: game.moves[j].from,
+                 to: game.moves[j].to,
+                 promotion: game.moves[j].promotion
+               });
+             }
+             
+             const bestMoveUci = previousAnalysis.bestMove;
+             
+             // Parse and play the best move
+             const from = bestMoveUci.slice(0, 2);
+             const to = bestMoveUci.slice(2, 4);
+             const promotion = bestMoveUci.slice(4, 5);
+             
+             const bestMoveResult = tempChess.move({
+               from: from as any,
+               to: to as any,
+               promotion: promotion || undefined
+             });
+             
+             if (bestMoveResult) {
+               // Analyze position after best move (lower depth for classification)
+               const bestMoveAnalysis = await nativeStockfish.analyze(tempChess.fen(), 15);
+               
+               // Now we have all three evaluations needed for classification
+               const evaluationBefore = previousAnalysis.evaluation;  // Before move
+               const evaluationAfter = analysis.evaluation;           // After actual move  
+               const evaluationBest = bestMoveAnalysis.evaluation;    // After best move
+               
+               // All evaluations should be from White's perspective
+               const moveQuality = MoveClassifier.classifyMove(
+                 evaluationBefore,
+                 evaluationAfter,
+                 evaluationBest
+               );
+               
+               // Add quality classification to the analysis
+               analysis.quality = moveQuality;
+             } else {
+               console.warn(`[Native] Failed to play best move ${bestMoveUci} for classification`);
+             }
+           } catch (error) {
+             console.warn(`[Native] Error analyzing best move for classification:`, error);
+           }
+         }
+        
+        // Skip SAN conversion during analysis - will do it later
         
         results[String(i + 1)] = analysis;
         analyzedPositions++;
@@ -465,6 +485,73 @@ async function handleStockfishAnalyzeGame(
     }
     
     console.log(`[Native] Game analysis complete: ${analyzedPositions}/${totalPositions} positions analyzed`);
+    
+    // Convert UCI to SAN for all best moves after analysis is complete
+    console.log('[Native] Converting UCI moves to SAN notation...');
+    const chessReplay = new Chess();
+    
+    // Convert starting position best move
+    if (results['0']?.bestMove && !results['0'].bestMoveSan) {
+      try {
+        const tempChess = new Chess(chessReplay.fen());
+        const from = results['0'].bestMove.slice(0, 2);
+        const to = results['0'].bestMove.slice(2, 4);
+        const promotion = results['0'].bestMove.slice(4, 5);
+        
+        const bestMoveResult = tempChess.move({
+          from: from as any,
+          to: to as any,
+          promotion: promotion || undefined
+        });
+        
+        if (bestMoveResult) {
+          results['0'].bestMoveSan = bestMoveResult.san;
+        }
+      } catch (error) {
+        console.warn('Failed to convert UCI to SAN for starting position:', error);
+      }
+    }
+    
+    // Convert best moves for each position
+    for (let i = 0; i < game.moves.length; i++) {
+      const move = game.moves[i];
+      
+      try {
+        // Play the actual move
+        chessReplay.move({
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion
+        });
+        
+        const positionKey = String(i + 1);
+        const analysis = results[positionKey];
+        
+        if (analysis?.bestMove && !analysis.bestMoveSan) {
+          try {
+            const tempChess = new Chess(chessReplay.fen());
+            const from = analysis.bestMove.slice(0, 2);
+            const to = analysis.bestMove.slice(2, 4);
+            const promotion = analysis.bestMove.slice(4, 5);
+            
+            const bestMoveResult = tempChess.move({
+              from: from as any,
+              to: to as any,
+              promotion: promotion || undefined
+            });
+            
+            if (bestMoveResult) {
+              analysis.bestMoveSan = bestMoveResult.san;
+            }
+          } catch (error) {
+            console.warn(`Failed to convert UCI to SAN for move ${i + 1}:`, error);
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to replay move ${i + 1} for SAN conversion:`, error);
+      }
+    }
+    
     return results;
   } catch (error) {
     console.error('[IPC] Error analyzing game:', error);
@@ -479,5 +566,23 @@ async function handleStockfishDestroy(): Promise<void> {
   if (nativeStockfish) {
     nativeStockfish.destroy();
     nativeStockfish = null;
+  }
+}
+
+/**
+ * Handles AI chat analysis requests
+ */
+async function handleAIChatAnalyze(
+  _event: IpcMainInvokeEvent,
+  pgn: string,
+  fen: string,
+  question: string
+): Promise<AIChatResponse> {
+  try {
+    console.log(`[IPC] AI Chat analyzing position: ${question}`);
+    return await aiChatService.analyzePosition(pgn, fen, question);
+  } catch (error) {
+    console.error('[IPC] Error in AI chat analysis:', error);
+    throw error;
   }
 } 

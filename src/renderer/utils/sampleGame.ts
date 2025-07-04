@@ -90,11 +90,12 @@ function createSampleGame(pgn: string, id: string): ChessGame {
   
   // Add some example move qualities
   parsedGame.moves.forEach((_move: ChessMove, index: number) => {
-    // Example pattern: mark some moves as good/bad
-    if (index % 7 === 0) sampleQualities.push('best');
-    else if (index % 5 === 0) sampleQualities.push('mistake');
-    else if (index % 3 === 0) sampleQualities.push('good');
-    else sampleQualities.push('good');
+    // Example pattern: mark some moves with new 4-tier system
+    if (index % 8 === 0) sampleQualities.push('best');
+    else if (index % 6 === 0) sampleQualities.push('blunder');
+    else if (index % 4 === 0) sampleQualities.push('inaccuracy');
+    else if (index % 2 === 0) sampleQualities.push('okay');
+    else sampleQualities.push('okay');
     
     // Add sample annotations for key moves
     if (index === 0) sampleAnnotations.push('Opening the game with king\'s pawn');

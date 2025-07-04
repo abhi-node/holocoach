@@ -12,6 +12,7 @@
 import { useEffect, useRef } from 'react';
 import { useChessStore } from '../../stores/useChessStore';
 import { MoveQuality } from '../../../shared/types/chess';
+import { MoveClassifier } from '../../../chess/analysis/MoveClassifier';
 
 /**
  * Gets the symbol for move quality
@@ -19,12 +20,11 @@ import { MoveQuality } from '../../../shared/types/chess';
 function getMoveQualitySymbol(quality?: MoveQuality): string {
   switch (quality) {
     case 'best':
-    case 'excellent':
-    case 'good':
       return '✓';
+    case 'okay':
+      return '○';
     case 'inaccuracy':
       return '⚡';
-    case 'mistake':
     case 'blunder':
       return '❌';
     default:
@@ -38,13 +38,11 @@ function getMoveQualitySymbol(quality?: MoveQuality): string {
 function getMoveQualityClass(quality?: MoveQuality): string {
   switch (quality) {
     case 'best':
-    case 'excellent':
-    case 'good':
-      return 'move-good';
+      return 'move-best';
+    case 'okay':
+      return 'move-okay';
     case 'inaccuracy':
       return 'move-inaccuracy';
-    case 'mistake':
-      return 'move-mistake';
     case 'blunder':
       return 'move-blunder';
     default:
@@ -74,43 +72,76 @@ function formatEval(evaluation: number, mate?: number): string {
 }
 
 /**
- * Calculate game statistics
+ * Gets color for accuracy percentage
  */
-function calculateStats(moves: any[]) {
-  const stats = {
+function getAccuracyColor(accuracy: number): string {
+  if (accuracy >= 95) return '#10B981'; // Excellent - emerald
+  if (accuracy >= 90) return '#059669'; // Great - green
+  if (accuracy >= 80) return '#65A30D'; // Good - lime
+  if (accuracy >= 70) return '#CA8A04'; // Decent - yellow
+  if (accuracy >= 60) return '#EA580C'; // Okay - orange
+  return '#DC2626'; // Needs work - red
+}
+
+/**
+ * Calculate game statistics by side
+ */
+function calculateStatsBySide(moves: any[]) {
+  const whiteStats = {
     best: 0,
-    good: 0,
+    okay: 0,
     inaccurate: 0,
-    bad: 0,
+    blunder: 0,
     total: 0,
-    accuracy: 0
+    accuracy: 0,
+    acpl: 0
   };
 
-  moves.forEach(move => {
+  const blackStats = {
+    best: 0,
+    okay: 0,
+    inaccurate: 0,
+    blunder: 0,
+    total: 0,
+    accuracy: 0,
+    acpl: 0
+  };
+
+  const whiteQualities: MoveQuality[] = [];
+  const blackQualities: MoveQuality[] = [];
+
+  moves.forEach((move, index) => {
+    const isWhite = index % 2 === 0;
+    const stats = isWhite ? whiteStats : blackStats;
+    const qualities = isWhite ? whiteQualities : blackQualities;
+    
     stats.total++;
-    switch (move.quality) {
-      case 'best':
-      case 'excellent':
-        stats.best++;
-        break;
-      case 'good':
-        stats.good++;
-        break;
-      case 'inaccuracy':
-        stats.inaccurate++;
-        break;
-      case 'mistake':
-      case 'blunder':
-        stats.bad++;
-        break;
+    
+    if (move.quality) {
+      qualities.push(move.quality);
+      
+      switch (move.quality) {
+        case 'best':
+          stats.best++;
+          break;
+        case 'okay':
+          stats.okay++;
+          break;
+        case 'inaccuracy':
+          stats.inaccurate++;
+          break;
+        case 'blunder':
+          stats.blunder++;
+          break;
+      }
     }
   });
 
-  // Calculate accuracy percentage
-  const goodMoves = stats.best + stats.good;
-  stats.accuracy = stats.total > 0 ? Math.round((goodMoves / stats.total) * 100) : 0;
+  // Calculate Chess.com-like accuracy using move qualities
+  whiteStats.accuracy = MoveClassifier.computeAccuracyFromQualities(whiteQualities);
+  blackStats.accuracy = MoveClassifier.computeAccuracyFromQualities(blackQualities);
 
-  return stats;
+  return { white: whiteStats, black: blackStats };
 }
 
 /**
@@ -139,10 +170,12 @@ export function MoveNavigationComponent({ bestMove }: MoveNavigationComponentPro
   const moveListRef = useRef<HTMLDivElement>(null);
   
   // Get analysis for current position
-  // When viewing a move, we want the analysis BEFORE that move was played
-  // So for move 0, we want analysis of starting position (index 0)
-  // For move 1, we want analysis after move 0 (index 1), etc.
-  const currentAnalysis = gameAnalysis?.get(currentMoveIndex) || null;
+  // When viewing a move, we want the analysis AFTER that move was played
+  // So for move 0, we want analysis from position 1 (after move 0)
+  // For move 1, we want analysis from position 2 (after move 1), etc.
+  const currentAnalysis = currentMoveIndex >= 0 
+    ? gameAnalysis?.get(currentMoveIndex + 1) || null 
+    : gameAnalysis?.get(0) || null; // Starting position
   
   // Auto-scroll to current move
   useEffect(() => {
@@ -189,7 +222,7 @@ export function MoveNavigationComponent({ bestMove }: MoveNavigationComponentPro
     );
   }
 
-  const stats = calculateStats(currentGame.moves);
+  const stats = calculateStatsBySide(currentGame.moves);
 
   return (
     <div className="move-navigation" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -324,81 +357,172 @@ export function MoveNavigationComponent({ bestMove }: MoveNavigationComponentPro
         borderRadius: '4px',
         minHeight: 0
       }}>
-        {currentGame.moves.map((move, index) => {
-          const moveNumber = Math.floor(index / 2) + 1;
-          const isWhite = index % 2 === 0;
-          const isActive = index === currentMoveIndex;
-          const qualitySymbol = getMoveQualitySymbol(move.quality);
-          const qualityClass = getMoveQualityClass(move.quality);
+        {Array.from({ length: Math.ceil(currentGame.moves.length / 2) }, (_, moveNumberIndex) => {
+          const moveNumber = moveNumberIndex + 1;
+          const whiteIndex = moveNumberIndex * 2;
+          const blackIndex = whiteIndex + 1;
+          const whiteMove = currentGame.moves[whiteIndex];
+          const blackMove = currentGame.moves[blackIndex];
 
           return (
-            <div key={index} className="move-row" style={{ display: 'inline-flex', width: '50%' }}>
-              {isWhite && (
-                <span className="move-number" style={{ marginRight: '4px', opacity: 0.6 }}>{moveNumber}.</span>
-              )}
+            <div key={moveNumber} className="move-pair" style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              marginBottom: '2px',
+              gap: '8px'
+            }}>
+              <span className="move-number" style={{ 
+                minWidth: '24px',
+                opacity: 0.6,
+                fontSize: '0.7rem'
+              }}>
+                {moveNumber}.
+              </span>
+              
+              {/* White Move */}
               <span
-                className={`move ${qualityClass} ${isActive ? 'move-active' : ''}`}
-                onClick={() => goToMove(index)}
+                className={`move ${getMoveQualityClass(whiteMove.quality)} ${whiteIndex === currentMoveIndex ? 'move-active' : ''}`}
+                onClick={() => goToMove(whiteIndex)}
                 style={{ 
                   cursor: 'pointer', 
                   padding: '2px 4px',
                   borderRadius: '2px',
-                  fontWeight: isActive ? '600' : '400'
+                  fontWeight: whiteIndex === currentMoveIndex ? '600' : '400',
+                  minWidth: '60px'
                 }}
               >
-                {move.san} {qualitySymbol}
+                {whiteMove.san} {getMoveQualitySymbol(whiteMove.quality)}
               </span>
+              
+              {/* Black Move (if exists) */}
+              {blackMove && (
+                <span
+                  className={`move ${getMoveQualityClass(blackMove.quality)} ${blackIndex === currentMoveIndex ? 'move-active' : ''}`}
+                  onClick={() => goToMove(blackIndex)}
+                  style={{ 
+                    cursor: 'pointer', 
+                    padding: '2px 4px',
+                    borderRadius: '2px',
+                    fontWeight: blackIndex === currentMoveIndex ? '600' : '400',
+                    minWidth: '60px'
+                  }}
+                >
+                  {blackMove.san} {getMoveQualitySymbol(blackMove.quality)}
+                </span>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Game Statistics */}
+      {/* Game Statistics by Side */}
       <div className="game-statistics" style={{ fontSize: '0.75rem', padding: '8px 0' }}>
-        <div className="quality-bar" style={{ 
-          height: '16px', 
-          background: 'rgba(0,0,0,0.1)', 
-          borderRadius: '8px',
-          position: 'relative',
-          marginBottom: '8px'
-        }}>
-          <div 
-            className="quality-bar-fill" 
-            style={{ 
-              width: `${stats.accuracy}%`,
-              height: '100%',
-              background: '#059669',
-              borderRadius: '8px',
-              transition: 'width 0.3s ease'
-            }}
-          />
-          <span className="quality-percentage" style={{
-            position: 'absolute',
-            right: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            fontWeight: '600',
-            fontSize: '0.625rem'
-          }}>{stats.accuracy}%</span>
+        {/* White Player Statistics */}
+        <div className="player-stats" style={{ marginBottom: '12px' }}>
+          <div className="player-header" style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '6px'
+          }}>
+            <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
+              ⚪ White ({stats.white.total} moves)
+            </span>
+            <span style={{ fontWeight: '600', fontSize: '0.75rem' }}>
+              {stats.white.accuracy}% • {MoveClassifier.getAccuracyDescription(stats.white.accuracy)}
+            </span>
+          </div>
+          <div className="quality-bar" style={{ 
+            height: '12px', 
+            background: 'rgba(0,0,0,0.1)', 
+            borderRadius: '6px',
+            position: 'relative',
+            marginBottom: '6px'
+          }}>
+            <div 
+              className="quality-bar-fill" 
+              style={{ 
+                width: `${stats.white.accuracy}%`,
+                height: '100%',
+                background: getAccuracyColor(stats.white.accuracy),
+                borderRadius: '6px',
+                transition: 'width 0.3s ease'
+              }}
+            />
+          </div>
+          <div className="stats-breakdown" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '4px',
+            fontSize: '0.6rem'
+          }}>
+            <span className="stat-item stat-best">
+              ✓ {stats.white.best}
+            </span>
+            <span className="stat-item stat-okay">
+              ○ {stats.white.okay}
+            </span>
+            <span className="stat-item stat-inaccurate">
+              ⚡ {stats.white.inaccurate}
+            </span>
+            <span className="stat-item stat-blunder">
+              ❌ {stats.white.blunder}
+            </span>
+          </div>
         </div>
-        
-        <div className="stats-breakdown" style={{ 
-          display: 'flex', 
-          justifyContent: 'space-around',
-          fontSize: '0.625rem'
-        }}>
-          <span className="stat-item stat-best">
-            Best: {stats.best}
-          </span>
-          <span className="stat-item stat-good">
-            Good: {stats.good}
-          </span>
-          <span className="stat-item stat-inaccurate">
-            Inaccurate: {stats.inaccurate}
-          </span>
-          <span className="stat-item stat-bad">
-            Bad: {stats.bad}
-          </span>
+
+        {/* Black Player Statistics */}
+        <div className="player-stats">
+          <div className="player-header" style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '6px'
+          }}>
+            <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
+              ⚫ Black ({stats.black.total} moves)
+            </span>
+            <span style={{ fontWeight: '600', fontSize: '0.75rem' }}>
+              {stats.black.accuracy}% • {MoveClassifier.getAccuracyDescription(stats.black.accuracy)}
+            </span>
+          </div>
+          <div className="quality-bar" style={{ 
+            height: '12px', 
+            background: 'rgba(0,0,0,0.1)', 
+            borderRadius: '6px',
+            position: 'relative',
+            marginBottom: '6px'
+          }}>
+            <div 
+              className="quality-bar-fill" 
+              style={{ 
+                width: `${stats.black.accuracy}%`,
+                height: '100%',
+                background: getAccuracyColor(stats.black.accuracy),
+                borderRadius: '6px',
+                transition: 'width 0.3s ease'
+              }}
+            />
+          </div>
+          <div className="stats-breakdown" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '4px',
+            fontSize: '0.6rem'
+          }}>
+            <span className="stat-item stat-best">
+              ✓ {stats.black.best}
+            </span>
+            <span className="stat-item stat-okay">
+              ○ {stats.black.okay}
+            </span>
+            <span className="stat-item stat-inaccurate">
+              ⚡ {stats.black.inaccurate}
+            </span>
+            <span className="stat-item stat-blunder">
+              ❌ {stats.black.blunder}
+            </span>
+          </div>
         </div>
       </div>
     </div>

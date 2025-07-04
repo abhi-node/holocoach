@@ -8,7 +8,9 @@
   "private": true,
   "homepage": "https://github.com/yourusername/holocoach",
   "scripts": {
+    "predev": "cd chess-ai-agent && docker-compose up -d && cd ..",
     "dev": "node scripts/copy-stockfish.js && npm run build:main && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "postdev": "cd chess-ai-agent && docker-compose down && cd ..",
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:3000 && electron .",
     "build": "node scripts/copy-stockfish.js && npm run build:main && npm run build:renderer",

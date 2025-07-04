@@ -102,6 +102,11 @@ export interface HoloCoachAPI {
     onProgress: (callback: (progress: { analyzed: number; total: number }) => void) => void;
     offProgress: () => void;
   };
+
+  // AI Chat operations
+  aiChat: {
+    analyzePosition: (pgn: string, fen: string, question: string) => Promise<any>;
+  };
 }
 
 // Create the API object
@@ -150,6 +155,10 @@ const holoCoachAPI: HoloCoachAPI = {
     offProgress: () => {
       ipcRenderer.removeAllListeners('stockfish-progress');
     }
+  },
+
+  aiChat: {
+    analyzePosition: (pgn: string, fen: string, question: string) => ipcRenderer.invoke('ai-chat-analyze', pgn, fen, question)
   }
 };
 
